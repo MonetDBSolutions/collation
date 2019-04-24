@@ -9,7 +9,7 @@
 
 LIBDIR = $(shell pkg-config --variable=libdir monetdb5)
 
-CFLAGS += $(shell pkg-config --cflags monetdb5)
+CFLAGS += $(shell pkg-config --cflags monetdb5) -g
 LDFLAGS += $(shell pkg-config --libs monetdb5)
 
 all: lib_collation.so
