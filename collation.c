@@ -9,7 +9,7 @@
 /* monetdb_config.h must be included as the first include file */
 #include <monetdb_config.h>
 
-/* mal_exception.h actually contains everything we need */
+#include <blob.h>
 #include <mal_exception.h>
 
 /* system include files */
@@ -22,117 +22,124 @@
 #define __declspec(x)	/* nothing */
 #endif
 
-extern __declspec(dllexport) char *UDFstrxfrm(char **ret, const char **arg);
-extern __declspec(dllexport) char *UDFBATstrxfrm(bat *ret, const bat *arg);
+extern __declspec(dllexport) char *UDFstrxfrm(blob **result, const char **input);
+extern __declspec(dllexport) char *UDFBATstrxfrm(bat *result, const bat *input);
 
 #define SOME_LOCALE_ID "de_DE.utf8"
+#define DEFAULT_MAX_STRING_KEY_SIZE 128
 
 static size_t
-do_strxfrm(char *dst, const char *src, size_t len, locale_t locale) {
+do_strxfrm(char *dest, const char *source, size_t len, locale_t locale) {
     
-    return strxfrm_l(dst, src, len, locale);
+    return strxfrm_l(dest, source, len, locale)  + /* for null terminator*/ 1;
 }
 
 char *
-UDFstrxfrm(char **ret, const char **arg)
+UDFstrxfrm(blob **result, const char **input)
 {
-	size_t len_arg = strlen(*arg);
-	locale_t locale = newlocale(LC_COLLATE_MASK, SOME_LOCALE_ID,( locale_t)0);
+	blob* dest;
+	size_t len, nbytes;
+	locale_t locale;
 
-	size_t len_ret = do_strxfrm(NULL, *arg, 0, locale);
+	locale = newlocale(LC_COLLATE_MASK, SOME_LOCALE_ID,( locale_t)0);
 
-	*ret = GDKmalloc(len_ret + 1);
-
-	if (*ret == NULL)
+	len = do_strxfrm(NULL, *input, 0, locale);
+	nbytes = blobsize(len);
+	dest = *result = GDKmalloc(nbytes);
+	if (dest == NULL)
 		throw(MAL, "collation.strxfrm", MAL_MALLOC_FAIL);
 
-	do_strxfrm(*ret, *arg, len_ret, locale);
+	dest->nitems =len;
+
+	do_strxfrm(dest->data, *input, len, locale);
 
 	return MAL_SUCCEED;
 }
 
 char *
-UDFBATstrxfrm(bat *ret, const bat *arg)
+UDFBATstrxfrm(bat *result, const bat *input)
 {
-	BAT *b, *bn;
+	BAT *input_bat, *result_bat;
 	BATiter bi;
+	blob *dest;
 	BUN p, q;
-	const char *src;
-	size_t len;
-	char *dst;
-	size_t dstlen;
+	const char *source;
+	locale_t locale;
+	size_t len, max_len, nbytes;
 
-	locale_t locale = newlocale(LC_COLLATE_MASK, SOME_LOCALE_ID,( locale_t)0);
+	locale = newlocale(LC_COLLATE_MASK, SOME_LOCALE_ID,( locale_t)0);
 
-	/* allocate temporary space for reversed strings; we grow this
+	/* allocate temporary space for transformed strings; we grow this
 	 * if we need more */
-	dstlen = 128;
-	dst = GDKmalloc(dstlen);
-	if (dst == NULL)
+	max_len = DEFAULT_MAX_STRING_KEY_SIZE;
+	nbytes = blobsize(max_len);
+	dest = GDKmalloc(nbytes);
+	if (dest == NULL)
 		throw(MAL, "collation.strxfrm", MAL_MALLOC_FAIL);
 
-	b = BATdescriptor(*arg);
-	if (b == NULL) {
-		GDKfree(dst);
+	input_bat = BATdescriptor(*input);
+	if (input_bat == NULL) {
+		GDKfree(dest);
 		throw(MAL, "collation.strxfrm", RUNTIME_OBJECT_MISSING);
 	}
 
 	/* we should only get called for string BATs */
-	assert(b->ttype == TYPE_str);
+	assert(input_bat->ttype == TYPE_str);
 
 	/* allocate result BAT */
-	bn = COLnew(b->hseqbase, TYPE_str, BATcount(b), TRANSIENT);
-	if (bn == NULL) {
-		BBPunfix(b->batCacheid);
-		GDKfree(dst);
+	result_bat = COLnew(input_bat->hseqbase, TYPE_blob, BATcount(input_bat), TRANSIENT);
+	if (result_bat == NULL) {
+		BBPunfix(input_bat->batCacheid);
+		GDKfree(dest);
 		throw(MAL, "collation.strxfrm", MAL_MALLOC_FAIL);
 	}
 
-	/* loop through BAT b; p is index of the entry we're working
+	/* loop through BAT input_bat; p is index of the entry we're working
 	 * on, q is used internally by BATloop to do the iterating */
-	bi = bat_iterator(b);
-	BATloop(b, p, q) {
-		src = (const char *) BUNtail(bi, p);
+	bi = bat_iterator(input_bat);
+	BATloop(input_bat, p, q) {
+		source = (const char *) BUNtail(bi, p);
 
-		size_t len = do_strxfrm(dst, src, dstlen, locale);
+		size_t len = do_strxfrm(dest->data, source, max_len, locale);
 
-		/* make sure dst is large enough */
-		if (len >= dstlen) {
-			char *ndst;
+		/* make sure dest is large enough */
+		if (len >= max_len) {
+			blob *ndest;
 
-			dstlen = len + 1024;
-			ndst = GDKrealloc(dst, dstlen);
-			if (ndst == NULL) {
-				/* if GDKrealloc fails, dst is still
+			max_len = len + DEFAULT_MAX_STRING_KEY_SIZE;
+			nbytes = blobsize(max_len);
+			ndest = GDKrealloc(dest, nbytes);
+			if (ndest == NULL) {
+				/* if GDKrealloc fails, dest is still
 				 * allocated */
 				goto bailout;
 			}
-			dst = ndst;
+			dest = ndest;
 
-			do_strxfrm(dst, src, dstlen, locale);
+			do_strxfrm(dest->data, source, max_len, locale);
 		}
 
-		if (BUNappend(bn, dst, false) != GDK_SUCCEED) {
+		dest->nitems = len;
+
+		if (BUNappend(result_bat, dest, false) != GDK_SUCCEED) {
 			/* BUNappend can fail since it may have to
 			 * grow memory areas--especially true for
 			 * string BATs */
 			goto bailout;
 		}
 	}
-	GDKfree(dst);
-
-	BBPunfix(b->batCacheid);
-
-	*ret = bn->batCacheid;
-	BBPkeepref(bn->batCacheid);
+	GDKfree(dest);
+	BBPunfix(input_bat->batCacheid);
+	*result = result_bat->batCacheid;
+	BBPkeepref(result_bat->batCacheid);
 
 	return MAL_SUCCEED;
 
   bailout:
 	/* we only get here in the case of an allocation error; clean
 	 * up the mess we've created and throw an exception */
-	GDKfree(dst);
-	BBPunfix(b->batCacheid);
-	BBPunfix(bn->batCacheid);
+	GDKfree(dest);
+	BBPunfix(input_bat->batCacheid);
+	BBPunfix(result_bat->batCacheid);
 	throw(MAL, "collation.strxfrm", MAL_MALLOC_FAIL);
 }

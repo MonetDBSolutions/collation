@@ -1,10 +1,9 @@
 module collation;
+command strxfrm(val:str):blob
+address UDFstrxfrm
+comment "Transform a utf8 string into a binairy collation respecting sortkey.";
 
- command strxfrm(val:str):str
- address UDFstrxfrm
- comment "Compares to strings";
-
- command strxfrm(b:bat[:str]):bat[:str]
- address UDFBATstrxfrm
- comment "Reverse a column of strings";
-
+module batcollation;
+command strxfrm(val:bat[:str]):bat[:blob]
+address UDFBATstrxfrm;
+comment "Transform a utf8 string into a binairy collation respecting sortkey.";
