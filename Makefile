@@ -20,7 +20,7 @@ collation.o: collation.c
 	$(CC) -fPIC -DPIC $(CFLAGS) -c collation.c
 
 clean:
-	rm -f README.html README.pdf *.o *.so
+	rm -f *.o *.so
 
 install: lib_collation.so
 	cp collation.mal lib_collation.so $(DESTDIR)$(LIBDIR)/monetdb5
