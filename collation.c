@@ -22,11 +22,10 @@
 #define __declspec(x)	/* nothing */
 #endif
 
-extern __declspec(dllexport) char *UDFstrxfrm(blob **result, const char **input);
-extern __declspec(dllexport) char *UDFBATstrxfrm(bat *result, const bat *input);
+extern __declspec(dllexport) char *UDFstrxfrm(blob **result, const char **input, const char **locale_id);
+extern __declspec(dllexport) char *UDFBATstrxfrm(bat *result, const bat *input, const bat * locale);
 
-#define SOME_LOCALE_ID "de_DE.utf8"
-#define DEFAULT_MAX_STRING_KEY_SIZE 128
+const size_t DEFAULT_MAX_STRING_KEY_SIZE = 128;
 
 static size_t
 do_strxfrm(char *dest, const char *source, size_t len, locale_t locale) {
@@ -35,13 +34,13 @@ do_strxfrm(char *dest, const char *source, size_t len, locale_t locale) {
 }
 
 char *
-UDFstrxfrm(blob **result, const char **input)
+UDFstrxfrm(blob **result, const char **input, const char **locale_id)
 {
 	blob* dest;
 	size_t len, nbytes;
 	locale_t locale;
 
-	locale = newlocale(LC_COLLATE_MASK, SOME_LOCALE_ID,( locale_t)0);
+	locale = newlocale(LC_COLLATE_MASK, *locale_id,( locale_t)0);
 
 	len = do_strxfrm(NULL, *input, 0, locale);
 	nbytes = blobsize(len);
@@ -57,9 +56,9 @@ UDFstrxfrm(blob **result, const char **input)
 }
 
 char *
-UDFBATstrxfrm(bat *result, const bat *input)
+UDFBATstrxfrm(bat *result, const bat *input, const bat * locale_id)
 {
-	BAT *input_bat, *result_bat;
+	BAT *input_bat, *result_bat, *locale_bat;
 	BATiter bi;
 	blob *dest;
 	BUN p, q;
@@ -67,7 +66,12 @@ UDFBATstrxfrm(bat *result, const bat *input)
 	locale_t locale;
 	size_t len, max_len, nbytes;
 
-	locale = newlocale(LC_COLLATE_MASK, SOME_LOCALE_ID,( locale_t)0);
+	/*START OF UGLY hack to get the bulk version recognized*/
+	locale_bat = BATdescriptor(*locale_id);
+	assert(locale_bat->ttype == TYPE_str);
+	bi = bat_iterator(locale_bat);
+	locale = newlocale(LC_COLLATE_MASK, (const char *) BUNtail(bi, p), ( locale_t)0);
+	/*END OF UGLY hack to get the bulk version recognized*/
 
 	/* allocate temporary space for transformed strings; we grow this
 	 * if we need more */

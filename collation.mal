@@ -1,9 +1,9 @@
 module collation;
-command strxfrm(val:str):blob
+command strxfrm(val:str, locale:str):blob
 address UDFstrxfrm
-comment "Transform a utf8 string into a binairy collation respecting sortkey.";
+comment "Transform a utf8 string into a binary collation respecting sortkey.";
 
 module batcollation;
-command strxfrm(val:bat[:str]):bat[:blob]
+command strxfrm(val:bat[:str], locale:bat[:str]):bat[:blob]
 address UDFBATstrxfrm;
-comment "Transform a utf8 string into a binairy collation respecting sortkey.";
+comment "Transform a utf8 string into a binary collation respecting sortkey.";
