@@ -119,7 +119,7 @@ UDFBATstrxfrm(bat *result, const bat *input, const bat * locale_id)
 	locale_bat = BATdescriptor(*locale_id);
 	assert(locale_bat->ttype == TYPE_str);
 	bi = bat_iterator(locale_bat);
-	locale = newlocale(LC_COLLATE_MASK, (const char *) BUNtail(bi, p), ( locale_t)0);
+	locale = newlocale(LC_COLLATE_MASK, (const char *) BUNtail(bi, 0), ( locale_t)0);
 	/*END OF UGLY hack to get the bulk version recognized*/
 
 	/* allocate temporary space for transformed strings; we grow this
