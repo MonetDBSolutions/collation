@@ -16,6 +16,11 @@
 #include <string.h>
 #include <locale.h>
 
+/*ICU includes*/
+#include <unicode/ucol.h>
+#include <unicode/usearch.h>
+#include <unicode/ustring.h>
+
 /* __declspec() must be used on Windows, but not on other systems */
 #ifndef _MSC_VER
 /* not Windows */
@@ -24,6 +29,50 @@
 
 extern __declspec(dllexport) char *UDFstrxfrm(blob **result, const char **input, const char **locale_id);
 extern __declspec(dllexport) char *UDFBATstrxfrm(bat *result, const bat *input, const bat * locale);
+extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
+
+char *
+UDFlikematch(bit* result, const char **pattern, const char **target, const char** locale_id)
+{
+	UErrorCode status = U_ZERO_ERROR;
+    int pos = USEARCH_DONE;
+    UStringSearch *search = NULL;
+
+	UChar u_pattern[strlen(*pattern)];
+    UChar u_target[strlen(*target)];
+    u_uastrcpy(u_pattern, *pattern);
+    u_uastrcpy(u_target, *target);
+
+	UCollator *coll = ucol_open(*locale_id, &status);
+
+	if (!U_SUCCESS(status)){
+		ucol_close(coll);
+		throw(MAL, "icu.likematch", "Could not create ICU collator.");
+	}
+
+	ucol_setStrength(coll, UCOL_PRIMARY);
+	search = usearch_openFromCollator(u_pattern, -1, u_target, -1, coll, NULL, &status);
+
+	if (!U_SUCCESS(status)){
+		ucol_close(coll);
+		usearch_close(search);
+		throw(MAL, "icu.likematch", "Could not instantiate ICU string search.");
+	}
+
+	pos = usearch_first(search, &status);
+
+	printf("position: %d\n", pos);
+	*result = pos != USEARCH_DONE;
+
+	usearch_close(search);
+	ucol_close(coll);
+
+	if (!U_SUCCESS(status)){
+		throw(MAL, "icu.likematch", "ICU string search failed.");
+	}
+
+	return MAL_SUCCEED;
+}
 
 const size_t DEFAULT_MAX_STRING_KEY_SIZE = 128;
 
