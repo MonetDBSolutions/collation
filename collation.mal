@@ -3,8 +3,8 @@ command strxfrm(val:str, locale:str):blob
 address UDFstrxfrm
 comment "Transform a utf8 string into a binary collation respecting sortkey.";
 
-command likematch(input:str, pattern:str, locale:str):bit
-address UDFlikematch
+command simplelikematch(input:str, pattern:str, locale:str):bit
+address UDFsimplelikematch
 comment "Check if input matches with pattern.";
 
 module batcollation;

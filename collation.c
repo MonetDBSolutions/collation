@@ -29,10 +29,10 @@
 
 extern __declspec(dllexport) char *UDFstrxfrm(blob **result, const char **input, const char **locale_id);
 extern __declspec(dllexport) char *UDFBATstrxfrm(bat *result, const bat *input, const bat * locale);
-extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
+extern __declspec(dllexport) char *UDFsimplelikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 
 char *
-UDFlikematch(bit* result, const char **pattern, const char **target, const char** locale_id)
+UDFsimplelikematch(bit* result, const char **pattern, const char **target, const char** locale_id)
 {
 	UErrorCode status = U_ZERO_ERROR;
 	int pos = USEARCH_DONE;
@@ -47,7 +47,7 @@ UDFlikematch(bit* result, const char **pattern, const char **target, const char*
 
 	if (!U_SUCCESS(status)){
 		ucol_close(coll);
-		throw(MAL, "icu.likematch", "Could not create ICU collator.");
+		throw(MAL, "icu.simplelikematch", "Could not create ICU collator.");
 	}
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
@@ -56,7 +56,7 @@ UDFlikematch(bit* result, const char **pattern, const char **target, const char*
 	if (!U_SUCCESS(status)){
 		ucol_close(coll);
 		usearch_close(search);
-		throw(MAL, "icu.likematch", "Could not instantiate ICU string search.");
+		throw(MAL, "icu.simplelikematch", "Could not instantiate ICU string search.");
 	}
 
 	pos = usearch_first(search, &status);
@@ -68,7 +68,7 @@ UDFlikematch(bit* result, const char **pattern, const char **target, const char*
 	ucol_close(coll);
 
 	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.likematch", "ICU string search failed.");
+		throw(MAL, "icu.simplelikematch", "ICU string search failed.");
 	}
 
 	return MAL_SUCCEED;
