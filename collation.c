@@ -38,10 +38,21 @@ UDFsimplelikematch(bit* result, const char **pattern, const char **target, const
 	int pos = USEARCH_DONE;
 	UStringSearch *search = NULL;
 
-	UChar u_pattern[strlen(*pattern)+1];
-	UChar u_target[strlen(*target)+1];
-	u_uastrcpy(u_pattern, *pattern);
-	u_uastrcpy(u_target, *target);
+	size_t pattern_capacity = strlen(*pattern);
+	UChar u_pattern[pattern_capacity];
+	u_strFromUTF8Lenient(u_pattern, pattern_capacity, NULL, *pattern, -1, &status);
+
+	if (!U_SUCCESS(status)){
+		throw(MAL, "icu.simplelikematch", "Could not transform pattern string from utf-8 to utf-16.");
+	}
+
+	size_t target_capacity = strlen(*target);
+	UChar u_target[target_capacity];
+	u_strFromUTF8Lenient(u_target, target_capacity, NULL, *target, -1, &status);
+
+	if (!U_SUCCESS(status)){
+		throw(MAL, "icu.simplelikematch", "Could not transform target string from utf-8 to utf-16.");
+	}
 
 	UCollator *coll = ucol_open(*locale_id, &status);
 
