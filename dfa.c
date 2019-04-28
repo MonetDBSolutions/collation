@@ -32,7 +32,7 @@ typedef state_t* start_function_t(lchar_t*);
 
 start_function_t start_with_percentage;
 start_function_t start_with_underscore;
-start_function_t start_with_first_escape;
+start_function_t start_with_escape;
 start_function_t start_with_normal_character;
 
 typedef void transition_function_t(state_t*, void*);
@@ -42,36 +42,28 @@ struct state_t {
     char* error_string;
     transition_function_t* to_percentage;
     transition_function_t* to_underscore;
-    transition_function_t* to_first_escape;
-    transition_function_t* to_second_escape;
+    transition_function_t* to_escape;
     transition_function_t* to_normal_character;
     transition_function_t* to_error;
 };
 
 transition_function_t from_percentage_to_percentage;
 transition_function_t from_percentage_to_underscore;
-transition_function_t from_percentage_to_first_escape;
+transition_function_t from_percentage_to_escape;
 transition_function_t from_percentage_to_normal_character;
 
 transition_function_t from_underscore_to_percentage;
 transition_function_t from_underscore_to_underscore;
-transition_function_t from_underscore_to_first_escape;
+transition_function_t from_underscore_to_escape;
 transition_function_t from_underscore_to_normal_character;
 
 transition_function_t from_normal_character_to_percentage;
 transition_function_t from_normal_character_to_underscore;
-transition_function_t from_normal_character_to_first_escape;
+transition_function_t from_normal_character_to_escape;
 transition_function_t from_normal_character_to_normal_character;
 
-transition_function_t from_first_escape_to_percentage;
-transition_function_t from_first_escape_to_underscore;
-transition_function_t from_first_escape_to_second_escape;
-transition_function_t from_first_escape_to_error;
-
-transition_function_t from_second_escape_to_percentage;
-transition_function_t from_second_escape_to_underscore;
-transition_function_t from_second_escape_to_first_escape;
-transition_function_t from_second_escape_to_normal_character;
+transition_function_t from_escape_to_normal_character;
+transition_function_t from_escape_to_error;
 
 const size_t INIT_BUFFER_SIZE = 128;
 
@@ -97,8 +89,7 @@ static state_t* create_initial_state() {
 static void set_percentage_transition_functions(state_t* state) {
     state->to_percentage        = from_percentage_to_percentage;
     state->to_underscore        = from_percentage_to_underscore;
-    state->to_first_escape      = from_percentage_to_first_escape;
-    state->to_second_escape     = NULL;
+    state->to_escape            = from_percentage_to_escape;
     state->to_normal_character  = from_percentage_to_normal_character;
     state->to_error             = NULL;
 }
@@ -106,26 +97,23 @@ static void set_percentage_transition_functions(state_t* state) {
 static void set_underscore_transition_functions(state_t* state) {
     state->to_percentage        = from_underscore_to_percentage;
     state->to_underscore        = from_underscore_to_underscore;
-    state->to_first_escape      = from_underscore_to_first_escape;
-    state->to_second_escape     = NULL;
+    state->to_escape            = from_underscore_to_escape;
     state->to_normal_character  = from_underscore_to_normal_character;
     state->to_error             = NULL;
 }
 
-static void set_first_escape_transition_functions(state_t* state) {
-    state->to_percentage        = from_first_escape_to_percentage;
-    state->to_underscore        = from_first_escape_to_underscore;
-    state->to_first_escape      = NULL;
-    state->to_second_escape     = from_first_escape_to_second_escape;
-    state->to_normal_character  = NULL;
-    state->to_error             = from_first_escape_to_error;
+static void set_escape_transition_functions(state_t* state) {
+    state->to_percentage        = NULL;
+    state->to_underscore        = NULL;
+    state->to_escape            = NULL;
+    state->to_normal_character  = from_escape_to_normal_character;
+    state->to_error             = from_escape_to_error;
 }
 
 static void set_normal_character_transition_functions(state_t* state) {
     state->to_percentage        = from_normal_character_to_percentage;
     state->to_underscore        = from_normal_character_to_underscore;
-    state->to_first_escape      = from_normal_character_to_first_escape;
-    state->to_second_escape     = NULL;
+    state->to_escape            = from_normal_character_to_escape;
     state->to_normal_character  = from_normal_character_to_normal_character;
     state->to_error             = NULL;
 }
@@ -187,11 +175,11 @@ static void append_character(string_buffer_t* buffer, const lchar_t character) {
 }
 
 #define CHECK_PERCENTAGE_STATE(state) ({\
+    assert(state->error_string == NULL); \
     assert(state->current->card == GREATER_OR_EQUAL); \
     assert(state->to_percentage == from_percentage_to_percentage); \
     assert(state->to_underscore == from_percentage_to_underscore); \
-    assert(state->to_first_escape == from_percentage_to_first_escape); \
-    assert(state->to_second_escape == NULL); \
+    assert(state->to_escape == from_percentage_to_escape); \
     assert(state->to_normal_character == from_percentage_to_normal_character); \
     assert(state->to_error == NULL); \
 })
@@ -211,12 +199,12 @@ void from_percentage_to_underscore(state_t* state, void* data) {
     set_underscore_transition_functions(state);
 }
 
-void from_percentage_to_first_escape(state_t* state, void* data) {
+void from_percentage_to_escape(state_t* state, void* data) {
     (void) data;
 
     CHECK_PERCENTAGE_STATE(state);
 
-    set_first_escape_transition_functions(state);
+    set_escape_transition_functions(state);
 }
 
 void from_percentage_to_normal_character(state_t* state, void* data) {
@@ -234,11 +222,11 @@ void from_percentage_to_normal_character(state_t* state, void* data) {
 }
 
 #define CHECK_UNDERSCORE_STATE(state) ({\
+    assert(state->error_string == NULL); \
     assert(state->current->start > 0); \
     assert(state->to_percentage == from_underscore_to_percentage); \
     assert(state->to_underscore == from_underscore_to_underscore); \
-    assert(state->to_first_escape == from_underscore_to_first_escape); \
-    assert(state->to_second_escape == NULL); \
+    assert(state->to_escape == from_underscore_to_escape); \
     assert(state->to_normal_character == from_underscore_to_normal_character); \
     assert(state->to_error == NULL); \
 })
@@ -263,12 +251,12 @@ void from_underscore_to_underscore(state_t* state, void* data) {
     set_underscore_transition_functions(state);
 }
 
-void from_underscore_to_first_escape(state_t* state, void* data) {
+void from_underscore_to_escape(state_t* state, void* data) {
     (void) data;
 
     CHECK_UNDERSCORE_STATE(state);
 
-    set_first_escape_transition_functions(state);
+    set_escape_transition_functions(state);
 }
 
 void from_underscore_to_normal_character(state_t* state, void* data) {
@@ -283,4 +271,45 @@ void from_underscore_to_normal_character(state_t* state, void* data) {
     append_character(&search_string->string_buffer, character);
 
     set_normal_character_transition_functions(state);
+}
+
+#define CHECK_ESCAPE_STATE(state) ({\
+    assert(state->error_string == NULL); \
+    assert(state->to_percentage == NULL); \
+    assert(state->to_underscore == NULL); \
+    assert(state->to_escape == NULL); \
+    assert(state->to_normal_character == from_escape_to_normal_character); \
+    assert(state->to_error == from_escape_to_error); \
+})
+
+void from_escape_to_normal_character(state_t* state, void* data) {
+    lchar_t character;
+    searchstring_t* search_string;
+
+    CHECK_ESCAPE_STATE(state);
+
+    character = *(lchar_t*) data;
+    search_string = state->current;
+
+    append_character(&search_string->string_buffer, character);
+
+    set_normal_character_transition_functions(state);
+}
+
+void from_escape_to_error(state_t* state, void* data) {
+    // lchar_t character;
+    char* message_buffer;
+
+    CHECK_ESCAPE_STATE(state);
+
+    (void) data;
+    // TODO: think of how to insert character in error string.
+    // character = *(lchar_t*) data;
+
+    const char* error = "Non-escapable character.";
+
+    message_buffer = (char*) GDKmalloc(strlen(error) + 1);
+
+    // Setting the error_string in the state signals an exception of the parsing process.
+    state->error_string = message_buffer;
 }
