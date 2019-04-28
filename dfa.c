@@ -96,6 +96,7 @@ static void set_percentage_transition_functions(state_t* state) {
     state->to_first_escape      = from_percentage_to_first_escape;
     state->to_second_escape     = NULL;
     state->to_normal_character  = from_percentage_to_normal_character;
+    state->to_error             = NULL;
 }
 
 static void set_underscore_transition_functions(state_t* state) {
@@ -104,6 +105,7 @@ static void set_underscore_transition_functions(state_t* state) {
     state->to_first_escape      = from_underscore_to_first_escape;
     state->to_second_escape     = NULL;
     state->to_normal_character  = from_underscore_to_normal_character;
+    state->to_error             = NULL;
 }
 
 static void set_first_escape_transition_functions(state_t* state) {
@@ -111,7 +113,8 @@ static void set_first_escape_transition_functions(state_t* state) {
     state->to_underscore        = from_first_escape_to_underscore;
     state->to_first_escape      = NULL;
     state->to_second_escape     = from_first_escape_to_second_escape;
-    state->to_normal_character  = from_first_escape_to_error;
+    state->to_normal_character  = NULL;
+    state->to_error             = from_first_escape_to_error;
 }
 
 static void set_normal_character_transition_functions(state_t* state) {
@@ -120,6 +123,7 @@ static void set_normal_character_transition_functions(state_t* state) {
     state->to_first_escape      = from_normal_character_to_first_escape;
     state->to_second_escape     = NULL;
     state->to_normal_character  = from_normal_character_to_normal_character;
+    state->to_error             = NULL;
 }
 
 state_t* start_with_percentage(lchar_t*  character) {
