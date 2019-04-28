@@ -232,3 +232,55 @@ void from_percentage_to_normal_character(state_t* state, void* data) {
 
     set_normal_character_transition_functions(state);
 }
+
+#define CHECK_UNDERSCORE_STATE(state) ({\
+    assert(state->current->start > 0); \
+    assert(state->to_percentage == from_underscore_to_percentage); \
+    assert(state->to_underscore == from_underscore_to_underscore); \
+    assert(state->to_first_escape == from_underscore_to_first_escape); \
+    assert(state->to_second_escape == NULL); \
+    assert(state->to_normal_character == from_underscore_to_normal_character); \
+    assert(state->to_error == NULL); \
+})
+
+void from_underscore_to_percentage(state_t* state, void* data) {
+    (void) data;
+
+    CHECK_UNDERSCORE_STATE(state);
+
+    state->current->card = GREATER_OR_EQUAL;
+
+    set_percentage_transition_functions(state);
+}
+
+void from_underscore_to_underscore(state_t* state, void* data) {
+    (void) data;
+
+    CHECK_UNDERSCORE_STATE(state);
+
+    state->current->start++;
+
+    set_underscore_transition_functions(state);
+}
+
+void from_underscore_to_first_escape(state_t* state, void* data) {
+    (void) data;
+
+    CHECK_UNDERSCORE_STATE(state);
+
+    set_first_escape_transition_functions(state);
+}
+
+void from_underscore_to_normal_character(state_t* state, void* data) {
+    lchar_t character;
+    searchstring_t* search_string;
+
+    CHECK_UNDERSCORE_STATE(state);
+
+    character = *(lchar_t*) data;
+    search_string = state->current;
+
+    append_character(&search_string->string_buffer, character);
+
+    set_normal_character_transition_functions(state);
+}
