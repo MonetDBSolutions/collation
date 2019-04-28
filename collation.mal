@@ -8,6 +8,12 @@ address UDFlikematch
 comment "Check if input matches with pattern.";
 
 module batcollation;
+command strxfrm(val:bat[:str], locale:str):bat[:blob]
+address UDFBATstrxfrm_cst
+comment "Transform a utf8 string into a binary collation respecting sortkey.";
+
+module batcollation;
 command strxfrm(val:bat[:str], locale:bat[:str]):bat[:blob]
 address UDFBATstrxfrm
 comment "Transform a utf8 string into a binary collation respecting sortkey.";
+

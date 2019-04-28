@@ -16,8 +16,8 @@ insert into foo values
 explain select strxfrm('asdsad', 'de_DE.utf8');
 select strxfrm('asdsad', 'de_DE.utf8');
 
-explain select * from foo order by strxfrm(s, (select 'de_DE.utf8'));
-select * from foo order by strxfrm(s, (select 'de_DE.utf8'));
+explain select * from foo order by strxfrm(s, 'de_DE.utf8');
+select * from foo order by strxfrm(s, 'de_DE.utf8');
 
 select * from foo order by s;
 

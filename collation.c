@@ -35,13 +35,13 @@ char *
 UDFlikematch(bit* result, const char **pattern, const char **target, const char** locale_id)
 {
 	UErrorCode status = U_ZERO_ERROR;
-    int pos = USEARCH_DONE;
-    UStringSearch *search = NULL;
+	int pos = USEARCH_DONE;
+	UStringSearch *search = NULL;
 
-	UChar u_pattern[strlen(*pattern)];
-    UChar u_target[strlen(*target)];
-    u_uastrcpy(u_pattern, *pattern);
-    u_uastrcpy(u_target, *target);
+	UChar u_pattern[strlen(*pattern)+1];
+	UChar u_target[strlen(*target)+1];
+	u_uastrcpy(u_pattern, *pattern);
+	u_uastrcpy(u_target, *target);
 
 	UCollator *coll = ucol_open(*locale_id, &status);
 
@@ -105,23 +105,17 @@ UDFstrxfrm(blob **result, const char **input, const char **locale_id)
 }
 
 char *
-UDFBATstrxfrm(bat *result, const bat *input, const bat * locale_id)
+UDFBATstrxfrm_cst(bat *result, const bat *input, const char **locale_str)
 {
-	BAT *input_bat, *result_bat, *locale_bat;
+	BAT *input_bat, *result_bat;
 	BATiter bi;
 	blob *dest;
 	BUN p, q;
 	const char *source;
-	locale_t locale;
 	size_t len, max_len, nbytes;
+	locale_t locale;
 
-	/*START OF UGLY hack to get the bulk version recognized*/
-	locale_bat = BATdescriptor(*locale_id);
-	assert(locale_bat->ttype == TYPE_str);
-	bi = bat_iterator(locale_bat);
-	locale = newlocale(LC_COLLATE_MASK, (const char *) BUNtail(bi, 0), ( locale_t)0);
-	/*END OF UGLY hack to get the bulk version recognized*/
-
+	locale = newlocale(LC_COLLATE_MASK, *locale_str, (locale_t)0);
 	/* allocate temporary space for transformed strings; we grow this
 	 * if we need more */
 	max_len = DEFAULT_MAX_STRING_KEY_SIZE;
@@ -195,4 +189,24 @@ UDFBATstrxfrm(bat *result, const bat *input, const bat * locale_id)
 	BBPunfix(input_bat->batCacheid);
 	BBPunfix(result_bat->batCacheid);
 	throw(MAL, "collation.strxfrm", MAL_MALLOC_FAIL);
+}
+
+char *
+UDFBATstrxfrm(bat *result, const bat *input, const bat * locale_id)
+{
+	BAT *locale_bat;
+	BATiter bi;
+	const char *locale_str;
+	char *res;
+
+	/*START OF UGLY hack to get the bulk version recognized*/
+	locale_bat = BATdescriptor(*locale_id);
+	assert(locale_bat->ttype == TYPE_str);
+	bi = bat_iterator(locale_bat);
+	locale_str = (const char *) BUNtail(bi, 0); 
+	/*END OF UGLY hack to get the bulk version recognized*/
+
+	res =  UDFBATstrxfrm_cst(result, input, &locale_str); 
+	BBPunfix(locale_bat->batCacheid);
+	return res;
 }
