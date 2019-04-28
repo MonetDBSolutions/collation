@@ -13,12 +13,16 @@ typedef enum cardinality {
     EQUAL
 } cardinality_t;
 
+typedef struct {
+    lchar_t* data;
+    size_t capacity;
+    size_t ncharacters;
+} string_buffer_t;
+
 typedef struct _searchstring_t {
     int start;
     cardinality_t card;
-    lchar_t* string_buffer;
-    size_t capacity;
-    size_t ncharacters;
+    string_buffer_t string_buffer;
     struct _searchstring_t* next;
 } searchstring_t;
 
@@ -79,9 +83,9 @@ static state_t* create_initial_state() {
     first = (searchstring_t*) GDKmalloc(sizeof(searchstring_t));
     first->start = 0;
     first->card = UNDEFINED;
-    first->string_buffer = (lchar_t*) GDKmalloc(INIT_BUFFER_SIZE * sizeof(lchar_t));
-    first->capacity = INIT_BUFFER_SIZE;
-    first->ncharacters = 0;
+    first->string_buffer.data = (lchar_t*) GDKmalloc(INIT_BUFFER_SIZE * sizeof(lchar_t));
+    first->string_buffer.capacity = INIT_BUFFER_SIZE;
+    first->string_buffer.ncharacters = 0;
     first->next = NULL;
 
     init_state->current = first;
@@ -167,6 +171,21 @@ state_t* start_with_normal_character(lchar_t*  character) {
     return init_state;
 }
 
+static void append_character(string_buffer_t* buffer, const lchar_t character) {
+    size_t capacity;
+
+    capacity = buffer->capacity;
+
+    if (capacity == ++buffer->ncharacters){
+        // reallocate string buffer with exponential reallocation strategy.
+        capacity = 2 * capacity;
+        buffer->data = (lchar_t*) GDKrealloc(buffer->data, capacity * sizeof(lchar_t));
+        buffer->capacity = capacity;
+    }
+
+    buffer->data[buffer->ncharacters] = character;
+}
+
 #define CHECK_PERCENTAGE_STATE(state) ({\
     assert(state->current->card == GREATER_OR_EQUAL); \
     assert(state->to_percentage == from_percentage_to_percentage); \
@@ -201,26 +220,15 @@ void from_percentage_to_first_escape(state_t* state, void* data) {
 }
 
 void from_percentage_to_normal_character(state_t* state, void* data) {
-    lchar_t* string_buffer;
     lchar_t character;
-    size_t capacity;
+    searchstring_t* search_string;
 
     CHECK_PERCENTAGE_STATE(state);
 
     character = *(lchar_t*) data;
+    search_string = state->current;
 
-    string_buffer = state->current->string_buffer;
-
-    capacity = state->current->capacity;
-
-    if (capacity == ++state->current->ncharacters){
-        // reallocate string buffer with exponential reallocation strategy.
-        capacity = 2 * capacity;
-        string_buffer = state->current->string_buffer = GDKrealloc(string_buffer, capacity * sizeof(lchar_t));
-        state->current->capacity = capacity;
-    }
-
-    string_buffer[state->current->ncharacters] = character;
+    append_character(&search_string->string_buffer, character);
 
     set_normal_character_transition_functions(state);
 }
