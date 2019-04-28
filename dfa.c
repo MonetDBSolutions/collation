@@ -166,3 +166,61 @@ state_t* start_with_normal_character(lchar_t*  character) {
 
     return init_state;
 }
+
+#define CHECK_PERCENTAGE_STATE(state) ({\
+    assert(state->current->card == GREATER_OR_EQUAL); \
+    assert(state->to_percentage == from_percentage_to_percentage); \
+    assert(state->to_underscore == from_percentage_to_underscore); \
+    assert(state->to_first_escape == from_percentage_to_first_escape); \
+    assert(state->to_second_escape == NULL); \
+    assert(state->to_normal_character == from_percentage_to_normal_character); \
+    assert(state->to_error == NULL); \
+})
+
+void from_percentage_to_percentage(state_t* state, void* data) {
+    (void) data;
+
+    CHECK_PERCENTAGE_STATE(state);
+}
+
+void from_percentage_to_underscore(state_t* state, void* data) {
+    (void) data;
+
+    CHECK_PERCENTAGE_STATE(state);
+    state->current->start++;
+
+    set_underscore_transition_functions(state);
+}
+
+void from_percentage_to_first_escape(state_t* state, void* data) {
+    (void) data;
+
+    CHECK_PERCENTAGE_STATE(state);
+
+    set_first_escape_transition_functions(state);
+}
+
+void from_percentage_to_normal_character(state_t* state, void* data) {
+    lchar_t* string_buffer;
+    lchar_t character;
+    size_t capacity;
+
+    CHECK_PERCENTAGE_STATE(state);
+
+    character = *(lchar_t*) data;
+
+    string_buffer = state->current->string_buffer;
+
+    capacity = state->current->capacity;
+
+    if (capacity == ++state->current->ncharacters){
+        // reallocate string buffer with exponential reallocation strategy.
+        capacity = 2 * capacity;
+        string_buffer = state->current->string_buffer = GDKrealloc(string_buffer, capacity * sizeof(lchar_t));
+        state->current->capacity = capacity;
+    }
+
+    string_buffer[state->current->ncharacters] = character;
+
+    set_normal_character_transition_functions(state);
+}
