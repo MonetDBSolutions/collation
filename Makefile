@@ -13,8 +13,12 @@ LDFLAGS += $(shell pkg-config --libs monetdb5)   $(shell pkg-config --libs icu-i
 
 all: lib_collation.so
 
-lib_collation.so: collation.o
-	$(CC) -fPIC -DPIC -o lib_collation.so -shared collation.o $(LDFLAGS) -Wl,-soname -Wl,lib_collation.so
+lib_collation.so: collation.o  dfa.o
+	$(CC) -fPIC -DPIC -o lib_collation.so -shared dfa.o -shared collation.o $(LDFLAGS) -Wl,-soname -Wl,lib_collation.so
+
+dfa.o: dfa.c
+	$(CC) -fPIC -DPIC $(CFLAGS) -c dfa.c
+
 
 collation.o: collation.c
 	$(CC) -fPIC -DPIC $(CFLAGS) -c collation.c

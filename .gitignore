@@ -1,2 +1,2 @@
-collation.o
-lib_collation.so
+*.o
+*.so
