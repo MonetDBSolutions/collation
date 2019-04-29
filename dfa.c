@@ -8,7 +8,6 @@
 typedef char lchar_t;
 
 typedef enum cardinality {
-    UNDEFINED,
     GREATER_OR_EQUAL,
     EQUAL
 } cardinality_t;
@@ -28,138 +27,124 @@ typedef struct _searchstring_t {
 
 typedef struct state_t state_t;
 
-typedef state_t* start_function_t(lchar_t*);
+typedef void transition_function_t(state_t*, lchar_t*);
 
-start_function_t start_with_percentage;
-start_function_t start_with_underscore;
-start_function_t start_with_escape;
-start_function_t start_with_normal_character;
-
-typedef void transition_function_t(state_t*, void*);
+typedef enum state_type {
+    MULTI_CHARACTER_WILDCARD,
+    SINGLE_CHARACTER_WILDCARD,
+    ESCAPE,
+    LITERAL
+} state_type_t;
 
 struct state_t {
+    state_type_t type;
+    lchar_t* esc_char;
     searchstring_t* current;
     char* error_string;
-    transition_function_t* to_percentage;
-    transition_function_t* to_underscore;
-    transition_function_t* to_escape;
-    transition_function_t* to_normal_character;
+    transition_function_t* handle_percentage;
+    transition_function_t* handle_underscore;
+    transition_function_t* handle_escape_character;
+    transition_function_t* handle_normal_character;
     transition_function_t* to_error;
 };
 
-transition_function_t from_percentage_to_percentage;
-transition_function_t from_percentage_to_underscore;
-transition_function_t from_percentage_to_escape;
-transition_function_t from_percentage_to_normal_character;
+transition_function_t initial_handle_percentage;
+transition_function_t initial_handle_underscore;
+transition_function_t initial_handle_escape;
+transition_function_t initial_handle_normal_character;
 
-transition_function_t from_underscore_to_percentage;
-transition_function_t from_underscore_to_underscore;
-transition_function_t from_underscore_to_escape;
-transition_function_t from_underscore_to_normal_character;
+transition_function_t mc_wildcard_handle_percentage;
+transition_function_t mc_wildcard_handle_underscore;
+transition_function_t mc_wildcard_handle_escape_character;
+transition_function_t mc_wildcard_handle_normal_character;
 
-transition_function_t from_normal_character_to_percentage;
-transition_function_t from_normal_character_to_underscore;
-transition_function_t from_normal_character_to_escape;
-transition_function_t from_normal_character_to_normal_character;
+transition_function_t sc_wildcard_handle_percentage;
+transition_function_t sc_wildcard_handle_underscore;
+transition_function_t sc_wildcard_handle_escape_character;
+transition_function_t sc_wildcard_handle_normal_character;
 
-transition_function_t from_escape_to_normal_character;
-transition_function_t from_escape_to_error;
+transition_function_t literal_handle_percentage;
+transition_function_t literal_handle_underscore;
+transition_function_t literal_handle_escape_character;
+transition_function_t literal_handle_normal_character;
+
+transition_function_t escape_handle_normal_character;
+transition_function_t escape_handle_error;
 
 const size_t INIT_BUFFER_SIZE = 128;
 
-static state_t* create_initial_state() {
-    state_t* init_state;
+static void set_initial_state(state_t* state, lchar_t* esc_char) {
     searchstring_t* first;
 
-    init_state = (state_t*) GDKmalloc(sizeof(state_t));
     first = (searchstring_t*) GDKmalloc(sizeof(searchstring_t));
     first->start = 0;
-    first->card = UNDEFINED;
     first->string_buffer.data = (lchar_t*) GDKmalloc(INIT_BUFFER_SIZE * sizeof(lchar_t));
     first->string_buffer.capacity = INIT_BUFFER_SIZE;
     first->string_buffer.ncharacters = 0;
     first->next = NULL;
 
-    init_state->current = first;
-    init_state->error_string = NULL;
+    state->esc_char = esc_char;
+    state->current = first;
+    state->error_string = NULL;
 
-    return init_state;
+    state->handle_percentage        = initial_handle_percentage;
+    state->handle_underscore        = initial_handle_underscore;
+    state->handle_escape_character  = initial_handle_escape;
+    state->handle_normal_character  = initial_handle_normal_character;
+    state->to_error                 = NULL;
 }
 
-static void set_percentage_transition_functions(state_t* state) {
-    state->to_percentage        = from_percentage_to_percentage;
-    state->to_underscore        = from_percentage_to_underscore;
-    state->to_escape            = from_percentage_to_escape;
-    state->to_normal_character  = from_percentage_to_normal_character;
-    state->to_error             = NULL;
+static void set_mc_wildcard_state(state_t* state) {
+    state->type                     = MULTI_CHARACTER_WILDCARD;
+
+    state->handle_percentage        = mc_wildcard_handle_percentage;
+    state->handle_underscore        = mc_wildcard_handle_underscore;
+    state->handle_escape_character  = mc_wildcard_handle_escape_character;
+    state->handle_normal_character  = mc_wildcard_handle_normal_character;
+    state->to_error                 = NULL;
 }
 
-static void set_underscore_transition_functions(state_t* state) {
-    state->to_percentage        = from_underscore_to_percentage;
-    state->to_underscore        = from_underscore_to_underscore;
-    state->to_escape            = from_underscore_to_escape;
-    state->to_normal_character  = from_underscore_to_normal_character;
-    state->to_error             = NULL;
+static void set_sc_wildcard_state(state_t* state) {
+    state->type                     = SINGLE_CHARACTER_WILDCARD;
+
+    state->handle_percentage        = sc_wildcard_handle_percentage;
+    state->handle_underscore        = sc_wildcard_handle_underscore;
+    state->handle_escape_character  = sc_wildcard_handle_escape_character;
+    state->handle_normal_character  = sc_wildcard_handle_normal_character;
+    state->to_error                 = NULL;
 }
 
-static void set_escape_transition_functions(state_t* state) {
-    state->to_percentage        = NULL;
-    state->to_underscore        = NULL;
-    state->to_escape            = NULL;
-    state->to_normal_character  = from_escape_to_normal_character;
-    state->to_error             = from_escape_to_error;
+static void set_escape_state(state_t* state) {
+    state->type                     = ESCAPE;
+
+    state->handle_percentage        = escape_handle_normal_character;
+    state->handle_underscore        = escape_handle_normal_character;
+    state->handle_escape_character  = escape_handle_normal_character;
+    state->handle_normal_character  = NULL;
+    state->to_error                 = escape_handle_error;
 }
 
-static void set_normal_character_transition_functions(state_t* state) {
-    state->to_percentage        = from_normal_character_to_percentage;
-    state->to_underscore        = from_normal_character_to_underscore;
-    state->to_escape            = from_normal_character_to_escape;
-    state->to_normal_character  = from_normal_character_to_normal_character;
-    state->to_error             = NULL;
+static void set_literal_state(state_t* state) {
+    state->type                     = LITERAL;
+
+    state->handle_percentage        = literal_handle_percentage;
+    state->handle_underscore        = literal_handle_underscore;
+    state->handle_escape_character  = literal_handle_escape_character;
+    state->handle_normal_character  = literal_handle_normal_character;
+    state->to_error                 = NULL;
 }
 
-state_t* start_with_percentage(lchar_t*  character) {
-    state_t* init_state;
+#define CHECK_PERCENTAGE_STATE(state) ({\
+    assert(state->error_string == NULL); \
+    assert(state->current->card == GREATER_OR_EQUAL); \
+    assert(state->handle_percentage == mc_wildcard_handle_percentage); \
+    assert(state->handle_underscore == mc_wildcard_handle_underscore); \
+    assert(state->handle_escape_character == mc_wildcard_handle_escape_character); \
+    assert(state->handle_normal_character == mc_wildcard_handle_normal_character); \
+    assert(state->to_error == NULL); \
+})
 
-    (void) character;
-
-    init_state = create_initial_state();
-    init_state->current->card = GREATER_OR_EQUAL;
-    assert(init_state->current->start == 0);
-
-    set_percentage_transition_functions(init_state);
-
-    return init_state;
-}
-
-state_t* start_with_underscore(lchar_t*  character) {
-    state_t* init_state;
-
-    (void) character;
-
-    init_state = create_initial_state();
-    init_state->current->card = EQUAL;
-    assert(init_state->current->start == 0);
-    init_state->current->start++;
-
-    set_underscore_transition_functions(init_state);
-
-    return init_state;
-}
-
-state_t* start_with_normal_character(lchar_t*  character) {
-    state_t* init_state;
-
-    (void) character;
-
-    init_state = create_initial_state();
-    init_state->current->card = EQUAL;
-    assert(init_state->current->start == 0);
-
-    return init_state;
-}
-
-static void append_character(string_buffer_t* buffer, const lchar_t character) {
+static void append_character(string_buffer_t* buffer, const lchar_t* character) {
     size_t capacity;
 
     capacity = buffer->capacity;
@@ -171,138 +156,176 @@ static void append_character(string_buffer_t* buffer, const lchar_t character) {
         buffer->capacity = capacity;
     }
 
-    buffer->data[buffer->ncharacters] = character;
+    buffer->data[buffer->ncharacters] = *character;
 }
 
-#define CHECK_PERCENTAGE_STATE(state) ({\
-    assert(state->error_string == NULL); \
-    assert(state->current->card == GREATER_OR_EQUAL); \
-    assert(state->to_percentage == from_percentage_to_percentage); \
-    assert(state->to_underscore == from_percentage_to_underscore); \
-    assert(state->to_escape == from_percentage_to_escape); \
-    assert(state->to_normal_character == from_percentage_to_normal_character); \
-    assert(state->to_error == NULL); \
-})
+static state_t* create_initial_state(lchar_t* esc_char) {
+    state_t* init_state;
 
-void from_percentage_to_percentage(state_t* state, void* data) {
-    (void) data;
+    init_state = (state_t*) GDKmalloc(sizeof(state_t));
 
-    CHECK_PERCENTAGE_STATE(state);
+    set_initial_state(init_state, esc_char);
+
+    return init_state;
 }
 
-void from_percentage_to_underscore(state_t* state, void* data) {
-    (void) data;
+void initial_handle_percentage(state_t* state, lchar_t*  character) {
+    (void) character;
 
-    CHECK_PERCENTAGE_STATE(state);
+    state->current->card = GREATER_OR_EQUAL;
+    assert(state->current->start == 0);
+
+    set_mc_wildcard_state(state);
+}
+
+void initial_handle_underscore(state_t* state, lchar_t*  character) {
+    (void) character;
+
+    state->current->card = EQUAL;
+    assert(state->current->start == 0);
     state->current->start++;
 
-    set_underscore_transition_functions(state);
+    set_sc_wildcard_state(state);
 }
 
-void from_percentage_to_escape(state_t* state, void* data) {
-    (void) data;
+void initial_handle_escape(state_t* state, lchar_t*  character) {
+    (void) character;
 
-    CHECK_PERCENTAGE_STATE(state);
+    state->current->card = EQUAL;
+    assert(state->current->start == 0);
 
-    set_escape_transition_functions(state);
+    set_escape_state(state);
 }
 
-void from_percentage_to_normal_character(state_t* state, void* data) {
-    lchar_t character;
+void initial_handle_normal_character(state_t* state, lchar_t*  character) {
     searchstring_t* search_string;
 
+    (void) character;
+
+    state->current->card = EQUAL;
+    assert(state->current->start == 0);
     CHECK_PERCENTAGE_STATE(state);
 
-    character = *(lchar_t*) data;
     search_string = state->current;
 
     append_character(&search_string->string_buffer, character);
 
-    set_normal_character_transition_functions(state);
+    set_literal_state(state);
+}
+
+void mc_wildcard_handle_percentage(state_t* state, lchar_t*  character) {
+    (void) character;
+
+    CHECK_PERCENTAGE_STATE(state);
+}
+
+void mc_wildcard_handle_underscore(state_t* state, lchar_t*  character) {
+    (void) character;
+
+    CHECK_PERCENTAGE_STATE(state);
+    state->current->start++;
+
+    set_sc_wildcard_state(state);
+}
+
+void mc_wildcard_handle_escape_character(state_t* state, lchar_t*  character) {
+    (void) character;
+
+    CHECK_PERCENTAGE_STATE(state);
+
+    set_escape_state(state);
+}
+
+void mc_wildcard_handle_normal_character(state_t* state, lchar_t*  character) {
+    searchstring_t* search_string;
+
+    CHECK_PERCENTAGE_STATE(state);
+
+    search_string = state->current;
+
+    append_character(&search_string->string_buffer, character);
+
+    set_literal_state(state);
 }
 
 #define CHECK_UNDERSCORE_STATE(state) ({\
     assert(state->error_string == NULL); \
     assert(state->current->start > 0); \
-    assert(state->to_percentage == from_underscore_to_percentage); \
-    assert(state->to_underscore == from_underscore_to_underscore); \
-    assert(state->to_escape == from_underscore_to_escape); \
-    assert(state->to_normal_character == from_underscore_to_normal_character); \
+    assert(state->handle_percentage == sc_wildcard_handle_percentage); \
+    assert(state->handle_underscore == sc_wildcard_handle_underscore); \
+    assert(state->handle_escape_character == sc_wildcard_handle_escape_character); \
+    assert(state->handle_normal_character == sc_wildcard_handle_normal_character); \
     assert(state->to_error == NULL); \
 })
 
-void from_underscore_to_percentage(state_t* state, void* data) {
-    (void) data;
+void sc_wildcard_handle_percentage(state_t* state, lchar_t*  character) {
+    (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
 
     state->current->card = GREATER_OR_EQUAL;
 
-    set_percentage_transition_functions(state);
+    set_mc_wildcard_state(state);
 }
 
-void from_underscore_to_underscore(state_t* state, void* data) {
-    (void) data;
+void sc_wildcard_handle_underscore(state_t* state, lchar_t*  character) {
+    (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
 
     state->current->start++;
 
-    set_underscore_transition_functions(state);
+    set_sc_wildcard_state(state);
 }
 
-void from_underscore_to_escape(state_t* state, void* data) {
-    (void) data;
+void sc_wildcard_handle_escape_character(state_t* state, lchar_t*  character) {
+    (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
 
-    set_escape_transition_functions(state);
+    set_escape_state(state);
 }
 
-void from_underscore_to_normal_character(state_t* state, void* data) {
-    lchar_t character;
+void sc_wildcard_handle_normal_character(state_t* state, lchar_t*  character) {
     searchstring_t* search_string;
 
     CHECK_UNDERSCORE_STATE(state);
 
-    character = *(lchar_t*) data;
     search_string = state->current;
 
     append_character(&search_string->string_buffer, character);
 
-    set_normal_character_transition_functions(state);
+    set_literal_state(state);
 }
 
 #define CHECK_ESCAPE_STATE(state) ({\
     assert(state->error_string == NULL); \
-    assert(state->to_percentage == NULL); \
-    assert(state->to_underscore == NULL); \
-    assert(state->to_escape == NULL); \
-    assert(state->to_normal_character == from_escape_to_normal_character); \
-    assert(state->to_error == from_escape_to_error); \
+    assert(state->handle_percentage == escape_handle_normal_character); \
+    assert(state->handle_underscore == escape_handle_normal_character); \
+    assert(state->handle_escape_character == escape_handle_normal_character); \
+    assert(state->handle_normal_character == NULL); \
+    assert(state->to_error == escape_handle_error); \
 })
 
-void from_escape_to_normal_character(state_t* state, void* data) {
-    lchar_t character;
+void escape_handle_normal_character(state_t* state, lchar_t*  character) {
     searchstring_t* search_string;
 
     CHECK_ESCAPE_STATE(state);
 
-    character = *(lchar_t*) data;
     search_string = state->current;
 
     append_character(&search_string->string_buffer, character);
 
-    set_normal_character_transition_functions(state);
+    set_literal_state(state);
 }
 
-void from_escape_to_error(state_t* state, void* data) {
+void escape_handle_error(state_t* state, lchar_t*  character) {
     // lchar_t character;
     char* message_buffer;
 
     CHECK_ESCAPE_STATE(state);
 
-    (void) data;
+    (void) character;
     // TODO: think of how to insert character in error string.
     // character = *(lchar_t*) data;
 
