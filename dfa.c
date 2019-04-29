@@ -342,3 +342,73 @@ void escape_handle_error(state_t* state, lchar_t*  character) {
     // Setting the error_string in the state signals an exception of the parsing process.
     state->error_string = message_buffer;
 }
+
+#define CHECK_LITERAL_STATE(state) ({\
+    assert(state->error_string == NULL); \
+    assert(state->handle_percentage == literal_handle_percentage); \
+    assert(state->handle_underscore == literal_handle_underscore); \
+    assert(state->handle_escape_character == literal_handle_escape_character); \
+    assert(state->handle_normal_character == literal_handle_normal_character); \
+    assert(state->to_error == NULL); \
+})
+
+static void increment_searchstring_list(state_t* state) {
+    searchstring_t* new;
+
+    /*
+     * We have reached the end of the current searchstring.
+     * So we are creating a new one.
+     * Append new searchstring to linked list and update state's current accordingly.
+     */
+    new = create_string_buffer();
+    state->current->next = new;
+    state->current = new;
+}
+
+void literal_handle_percentage(state_t* state, lchar_t*  character) {
+    (void) character;
+
+    CHECK_LITERAL_STATE(state);
+
+    increment_searchstring_list(state);
+
+    assert(state->current->start == 0);
+    state->current->card = GREATER_OR_EQUAL;
+
+    set_mc_wildcard_state(state);
+}
+
+void literal_handle_underscore(state_t* state, lchar_t*  character) {
+    (void) character;
+    searchstring_t* new;
+
+    CHECK_LITERAL_STATE(state);
+
+    increment_searchstring_list(state);
+
+    assert(state->current->start == 0);
+    state->current->card = EQUAL;
+    state->current->start++;
+
+    set_sc_wildcard_state(state);
+}
+
+void literal_handle_escape_character(state_t* state, lchar_t*  character) {
+    (void) character;
+
+    CHECK_LITERAL_STATE(state);
+
+    set_escape_state(state);
+}
+
+void literal_handle_normal_character(state_t* state, lchar_t*  character) {
+    searchstring_t* search_string;
+
+    CHECK_LITERAL_STATE(state);
+
+    search_string = state->current;
+
+    append_character(&search_string->string_buffer, character);
+
+    set_literal_state(state);
+}
