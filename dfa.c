@@ -1,29 +1,6 @@
-/*
- * LIKE pattern parser based on Deterministic Finite Automaton architecture.
- */
+#include "dfa.h"
 
-#include <monetdb_config.h>
 #include <gdk.h>
-
-typedef char lchar_t;
-
-typedef enum cardinality {
-    GREATER_OR_EQUAL,
-    EQUAL
-} cardinality_t;
-
-typedef struct {
-    lchar_t* data;
-    size_t capacity;
-    size_t ncharacters;
-} string_buffer_t;
-
-typedef struct _searchstring_t {
-    int start;
-    cardinality_t card;
-    string_buffer_t string_buffer;
-    struct _searchstring_t* next;
-} searchstring_t;
 
 typedef struct state_t state_t;
 
@@ -428,7 +405,7 @@ static void handle_character(state_t* state, lchar_t* cursor) {
     }
 }
 
-searchstring_t* handle_like_pattern(lchar_t* pattern, size_t length, lchar_t* esc_char) {
+searchstring_t* create_searchstring_list(lchar_t* pattern, size_t length, lchar_t* esc_char) {
     assert(length > 0);
 
     lchar_t* cursor = pattern;
