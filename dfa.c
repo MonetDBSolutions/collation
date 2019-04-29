@@ -412,3 +412,35 @@ void literal_handle_normal_character(state_t* state, lchar_t*  character) {
 
     set_literal_state(state);
 }
+
+static void go_to_next_state(state_t* state, lchar_t* cursor) {
+
+    if ( *state->esc_char ==  *cursor)
+        return state->handle_escape_character(state, cursor);
+
+    switch (*cursor) {
+        case '%':
+            return state->handle_percentage(state, cursor);
+        case '_':
+            return state->handle_underscore(state, cursor);
+        default:
+            return state->handle_normal_character(state, cursor);
+    }
+}
+
+searchstring_t* handle_like_pattern(lchar_t* pattern, size_t length, lchar_t* esc_char) {
+    assert(length > 0);
+
+    lchar_t* cursor = pattern;
+
+    state_t* state = create_initial_state(esc_char);
+
+    searchstring_t* search_strings = state->current; // head of linked list of search string objects.
+
+    for (size_t i = 0; i < length && state->error_string == NULL; i++) {
+        cursor++;
+        go_to_next_state(state, cursor);
+    }
+
+    return search_strings;
+}
