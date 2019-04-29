@@ -73,7 +73,7 @@ transition_function_t escape_handle_error;
 
 const size_t INIT_BUFFER_SIZE = 128;
 
-static void set_initial_state(state_t* state, lchar_t* esc_char) {
+static searchstring_t* create_string_buffer() {
     searchstring_t* first;
 
     first = (searchstring_t*) GDKmalloc(sizeof(searchstring_t));
@@ -82,6 +82,12 @@ static void set_initial_state(state_t* state, lchar_t* esc_char) {
     first->string_buffer.capacity = INIT_BUFFER_SIZE;
     first->string_buffer.ncharacters = 0;
     first->next = NULL;
+}
+
+static void set_initial_state(state_t* state, lchar_t* esc_char) {
+    searchstring_t* first;
+
+    first = create_string_buffer();
 
     state->esc_char = esc_char;
     state->current = first;
