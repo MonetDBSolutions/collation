@@ -442,5 +442,7 @@ searchstring_t* handle_like_pattern(lchar_t* pattern, size_t length, lchar_t* es
         handle_character(state, cursor);
     }
 
+    // TODO: Do something with error.
+
     return search_strings;
 }
