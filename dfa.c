@@ -413,7 +413,7 @@ void literal_handle_normal_character(state_t* state, lchar_t*  character) {
     set_literal_state(state);
 }
 
-static void go_to_next_state(state_t* state, lchar_t* cursor) {
+static void handle_character(state_t* state, lchar_t* cursor) {
 
     if ( *state->esc_char ==  *cursor)
         return state->handle_escape_character(state, cursor);
@@ -439,7 +439,7 @@ searchstring_t* handle_like_pattern(lchar_t* pattern, size_t length, lchar_t* es
 
     for (size_t i = 0; i < length && state->error_string == NULL; i++) {
         cursor++;
-        go_to_next_state(state, cursor);
+        handle_character(state, cursor);
     }
 
     return search_strings;
