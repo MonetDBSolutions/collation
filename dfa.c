@@ -4,7 +4,7 @@
 
 typedef struct state_t state_t;
 
-typedef void transition_function_t(state_t*, const char*);
+typedef void transition_function_t(state_t*, const char);
 
 typedef enum state_type {
     MULTI_CHARACTER_WILDCARD,
@@ -127,7 +127,7 @@ static void set_literal_state(state_t* state) {
     assert(state->to_error == NULL); \
 })
 
-static void append_character(string_buffer_t* buffer, const char* character) {
+static void append_character(string_buffer_t* buffer, const char character) {
     size_t capacity;
 
     capacity = buffer->capacity;
@@ -139,7 +139,7 @@ static void append_character(string_buffer_t* buffer, const char* character) {
         buffer->capacity = capacity;
     }
 
-    buffer->data[buffer->ncharacters++] = *character;
+    buffer->data[buffer->ncharacters++] = character;
 }
 
 static state_t* create_initial_state(char esc_char) {
@@ -152,7 +152,7 @@ static state_t* create_initial_state(char esc_char) {
     return init_state;
 }
 
-void initial_handle_percentage(state_t* state, const char*  character) {
+void initial_handle_percentage(state_t* state, const char  character) {
     (void) character;
 
     state->current->card = GREATER_OR_EQUAL;
@@ -161,7 +161,7 @@ void initial_handle_percentage(state_t* state, const char*  character) {
     set_mc_wildcard_state(state);
 }
 
-void initial_handle_underscore(state_t* state, const char*  character) {
+void initial_handle_underscore(state_t* state, const char  character) {
     (void) character;
 
     state->current->card = EQUAL;
@@ -171,7 +171,7 @@ void initial_handle_underscore(state_t* state, const char*  character) {
     set_sc_wildcard_state(state);
 }
 
-void initial_handle_escape(state_t* state, const char*  character) {
+void initial_handle_escape(state_t* state, const char  character) {
     (void) character;
 
     state->current->card = EQUAL;
@@ -180,7 +180,8 @@ void initial_handle_escape(state_t* state, const char*  character) {
     set_escape_state(state);
 }
 
-void initial_handle_normal_character(state_t* state, const char*  character) {
+// TODO all these const char* pointers can be normal copy parameters
+void initial_handle_normal_character(state_t* state, const char  character) {
     searchstring_t* search_string;
 
     (void) character;
@@ -195,13 +196,13 @@ void initial_handle_normal_character(state_t* state, const char*  character) {
     set_literal_state(state);
 }
 
-void mc_wildcard_handle_percentage(state_t* state, const char*  character) {
+void mc_wildcard_handle_percentage(state_t* state, const char  character) {
     (void) character;
 
     CHECK_PERCENTAGE_STATE(state);
 }
 
-void mc_wildcard_handle_underscore(state_t* state, const char*  character) {
+void mc_wildcard_handle_underscore(state_t* state, const char  character) {
     (void) character;
 
     CHECK_PERCENTAGE_STATE(state);
@@ -210,7 +211,7 @@ void mc_wildcard_handle_underscore(state_t* state, const char*  character) {
     set_sc_wildcard_state(state);
 }
 
-void mc_wildcard_handle_escape_character(state_t* state, const char*  character) {
+void mc_wildcard_handle_escape_character(state_t* state, const char  character) {
     (void) character;
 
     CHECK_PERCENTAGE_STATE(state);
@@ -218,7 +219,7 @@ void mc_wildcard_handle_escape_character(state_t* state, const char*  character)
     set_escape_state(state);
 }
 
-void mc_wildcard_handle_normal_character(state_t* state, const char*  character) {
+void mc_wildcard_handle_normal_character(state_t* state, const char  character) {
     searchstring_t* search_string;
 
     CHECK_PERCENTAGE_STATE(state);
@@ -240,7 +241,7 @@ void mc_wildcard_handle_normal_character(state_t* state, const char*  character)
     assert(state->to_error == NULL); \
 })
 
-void sc_wildcard_handle_percentage(state_t* state, const char*  character) {
+void sc_wildcard_handle_percentage(state_t* state, const char  character) {
     (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -250,7 +251,7 @@ void sc_wildcard_handle_percentage(state_t* state, const char*  character) {
     set_mc_wildcard_state(state);
 }
 
-void sc_wildcard_handle_underscore(state_t* state, const char*  character) {
+void sc_wildcard_handle_underscore(state_t* state, const char  character) {
     (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -260,7 +261,7 @@ void sc_wildcard_handle_underscore(state_t* state, const char*  character) {
     set_sc_wildcard_state(state);
 }
 
-void sc_wildcard_handle_escape_character(state_t* state, const char*  character) {
+void sc_wildcard_handle_escape_character(state_t* state, const char  character) {
     (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -268,7 +269,7 @@ void sc_wildcard_handle_escape_character(state_t* state, const char*  character)
     set_escape_state(state);
 }
 
-void sc_wildcard_handle_normal_character(state_t* state, const char*  character) {
+void sc_wildcard_handle_normal_character(state_t* state, const char  character) {
     searchstring_t* search_string;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -289,7 +290,7 @@ void sc_wildcard_handle_normal_character(state_t* state, const char*  character)
     assert(state->to_error == escape_handle_error); \
 })
 
-void escape_handle_normal_character(state_t* state, const char*  character) {
+void escape_handle_normal_character(state_t* state, const char  character) {
     searchstring_t* search_string;
 
     CHECK_ESCAPE_STATE(state);
@@ -301,7 +302,7 @@ void escape_handle_normal_character(state_t* state, const char*  character) {
     set_literal_state(state);
 }
 
-void escape_handle_error(state_t* state, const char*  character) {
+void escape_handle_error(state_t* state, const char  character) {
     // char character;
     char* message_buffer;
 
@@ -343,7 +344,7 @@ static void increment_searchstring_list(state_t* state) {
     state->current = new;
 }
 
-void literal_handle_percentage(state_t* state, const char*  character) {
+void literal_handle_percentage(state_t* state, const char  character) {
     (void) character;
 
     CHECK_LITERAL_STATE(state);
@@ -356,7 +357,7 @@ void literal_handle_percentage(state_t* state, const char*  character) {
     set_mc_wildcard_state(state);
 }
 
-void literal_handle_underscore(state_t* state, const char*  character) {
+void literal_handle_underscore(state_t* state, const char  character) {
     (void) character;
     searchstring_t* new;
 
@@ -371,7 +372,7 @@ void literal_handle_underscore(state_t* state, const char*  character) {
     set_sc_wildcard_state(state);
 }
 
-void literal_handle_escape_character(state_t* state, const char*  character) {
+void literal_handle_escape_character(state_t* state, const char  character) {
     (void) character;
 
     CHECK_LITERAL_STATE(state);
@@ -379,7 +380,7 @@ void literal_handle_escape_character(state_t* state, const char*  character) {
     set_escape_state(state);
 }
 
-void literal_handle_normal_character(state_t* state, const char*  character) {
+void literal_handle_normal_character(state_t* state, const char  character) {
     searchstring_t* search_string;
 
     CHECK_LITERAL_STATE(state);
@@ -391,12 +392,12 @@ void literal_handle_normal_character(state_t* state, const char*  character) {
     set_literal_state(state);
 }
 
-static void handle_character(state_t* state, const char* cursor) {
+static void handle_character(state_t* state, const char cursor) {
 
-    if ( state->esc_char ==  *cursor)
+    if ( state->esc_char ==  cursor)
         return state->handle_escape_character(state, cursor);
 
-    switch (*cursor) {
+    switch (cursor) {
         case '%':
             return state->handle_percentage(state, cursor);
         case '_':
@@ -416,7 +417,8 @@ searchstring_t* create_searchstring_list(const char* pattern, size_t length, cha
     searchstring_t* search_strings = state->current; // head of linked list of search string objects.
 
     for (size_t i = 0; i < length && state->error_string == NULL; i++) {
-        handle_character(state, cursor++);
+        handle_character(state, *cursor);
+        ++cursor;
     }
 
     // TODO: Do something with error.
