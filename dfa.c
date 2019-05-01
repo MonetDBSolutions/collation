@@ -132,14 +132,14 @@ static void append_character(string_buffer_t* buffer, const char* character) {
 
     capacity = buffer->capacity;
 
-    if (capacity == ++buffer->ncharacters){
+    if (capacity == buffer->ncharacters){
         // reallocate string buffer with exponential reallocation strategy.
         capacity = 2 * capacity;
         buffer->data = (char*) GDKrealloc(buffer->data, capacity * sizeof(char));
         buffer->capacity = capacity;
     }
 
-    buffer->data[buffer->ncharacters] = *character;
+    buffer->data[buffer->ncharacters++] = *character;
 }
 
 static state_t* create_initial_state(char esc_char) {
