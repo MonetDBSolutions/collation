@@ -21,6 +21,8 @@
 #include <unicode/usearch.h>
 #include <unicode/ustring.h>
 
+#include "dfa.h"
+
 /* __declspec() must be used on Windows, but not on other systems */
 #ifndef _MSC_VER
 /* not Windows */
@@ -29,6 +31,7 @@
 
 extern __declspec(dllexport) char *UDFstrxfrm(blob **result, const char **input, const char **locale_id);
 extern __declspec(dllexport) char *UDFBATstrxfrm(bat *result, const bat *input, const bat * locale);
+extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 extern __declspec(dllexport) char *UDFsimplelikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 
 static char * simplelikematch(bit* found, const char **pattern, const char **target, UCollator* coll) {
@@ -90,6 +93,35 @@ UDFsimplelikematch(bit* result, const char** pattern, const char** target, const
 	return_status = simplelikematch(result, pattern, target, coll);
 
 	ucol_close(coll);
+
+	return return_status;
+}
+
+static char* likematch_recursive(bit* result, searchstring_t* current, int offset, const char* target, UCollator* coll) {
+
+	return MAL_SUCCEED;
+}
+
+char *
+UDFlikematch(bit* result, const char** pattern, const char** target, const char** locale_id) {
+	UErrorCode status = U_ZERO_ERROR;
+	UCollator* coll;
+	UStringSearch* search;
+	char* return_status;
+	searchstring_t* head;
+
+	coll = ucol_open(*locale_id, &status);
+
+	if (!U_SUCCESS(status)) {
+		ucol_close(coll);
+		throw(MAL, "icu.simplelikematch", "Could not create ICU collator.");
+	}
+
+	ucol_setStrength(coll, UCOL_PRIMARY);
+
+	head = create_searchstring_list(*pattern, strlen(*pattern), '\\');
+
+	return_status = likematch_recursive(result, head, 0, *target, coll);
 
 	return return_status;
 }
