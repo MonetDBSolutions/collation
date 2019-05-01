@@ -421,7 +421,8 @@ searchstring_t* create_searchstring_list(const char* pattern, size_t length, cha
         ++cursor;
     }
 
-    // TODO: Do something with error.
+    // Finalize final pattern chunk. Perhaps we need to a bit more here later on...
+    append_character(&state->current->string_buffer, '\0');
 
     return search_strings;
 }
