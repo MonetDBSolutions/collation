@@ -38,4 +38,49 @@ with strings as (select 'fußball' as pattern, 'FUSSBALL' as target)
 with strings as (select 'A' as pattern, 'bcäbc' as target)
     select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
 
+with strings as (select '%A' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '_A' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '__A' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '_%A' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '%_A' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '__%_A' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '__%_A' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '%c%b' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '%b_A' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '%b__A' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select 'b___c' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '_' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '__' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '%' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
 ROLLBACK;
