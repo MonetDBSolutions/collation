@@ -4,7 +4,7 @@ address UDFstrxfrm
 comment "Transform a utf8 string into a binary collation respecting sortkey.";
 
 command simplelikematch(input:str, pattern:str, locale:str):bit
-address UDFsimplelikematch
+address UDFlikematch
 comment "Check if input matches with pattern.";
 
 module batcollation;
