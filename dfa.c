@@ -4,7 +4,7 @@
 
 typedef struct state_t state_t;
 
-typedef void transition_function_t(state_t*, lchar_t*);
+typedef void transition_function_t(state_t*, const char*);
 
 typedef enum state_type {
     MULTI_CHARACTER_WILDCARD,
@@ -15,7 +15,7 @@ typedef enum state_type {
 
 struct state_t {
     state_type_t type;
-    lchar_t* esc_char;
+    char esc_char;
     searchstring_t* current;
     char* error_string;
     transition_function_t* handle_percentage;
@@ -55,13 +55,13 @@ static searchstring_t* create_string_buffer() {
 
     first = (searchstring_t*) GDKmalloc(sizeof(searchstring_t));
     first->start = 0;
-    first->string_buffer.data = (lchar_t*) GDKmalloc(INIT_BUFFER_SIZE * sizeof(lchar_t));
+    first->string_buffer.data = (char*) GDKmalloc(INIT_BUFFER_SIZE * sizeof(char));
     first->string_buffer.capacity = INIT_BUFFER_SIZE;
     first->string_buffer.ncharacters = 0;
     first->next = NULL;
 }
 
-static void set_initial_state(state_t* state, lchar_t* esc_char) {
+static void set_initial_state(state_t* state, char esc_char) {
     searchstring_t* first;
 
     first = create_string_buffer();
@@ -127,7 +127,7 @@ static void set_literal_state(state_t* state) {
     assert(state->to_error == NULL); \
 })
 
-static void append_character(string_buffer_t* buffer, const lchar_t* character) {
+static void append_character(string_buffer_t* buffer, const char* character) {
     size_t capacity;
 
     capacity = buffer->capacity;
@@ -135,14 +135,14 @@ static void append_character(string_buffer_t* buffer, const lchar_t* character) 
     if (capacity == ++buffer->ncharacters){
         // reallocate string buffer with exponential reallocation strategy.
         capacity = 2 * capacity;
-        buffer->data = (lchar_t*) GDKrealloc(buffer->data, capacity * sizeof(lchar_t));
+        buffer->data = (char*) GDKrealloc(buffer->data, capacity * sizeof(char));
         buffer->capacity = capacity;
     }
 
     buffer->data[buffer->ncharacters] = *character;
 }
 
-static state_t* create_initial_state(lchar_t* esc_char) {
+static state_t* create_initial_state(char esc_char) {
     state_t* init_state;
 
     init_state = (state_t*) GDKmalloc(sizeof(state_t));
@@ -152,7 +152,7 @@ static state_t* create_initial_state(lchar_t* esc_char) {
     return init_state;
 }
 
-void initial_handle_percentage(state_t* state, lchar_t*  character) {
+void initial_handle_percentage(state_t* state, const char*  character) {
     (void) character;
 
     state->current->card = GREATER_OR_EQUAL;
@@ -161,7 +161,7 @@ void initial_handle_percentage(state_t* state, lchar_t*  character) {
     set_mc_wildcard_state(state);
 }
 
-void initial_handle_underscore(state_t* state, lchar_t*  character) {
+void initial_handle_underscore(state_t* state, const char*  character) {
     (void) character;
 
     state->current->card = EQUAL;
@@ -171,7 +171,7 @@ void initial_handle_underscore(state_t* state, lchar_t*  character) {
     set_sc_wildcard_state(state);
 }
 
-void initial_handle_escape(state_t* state, lchar_t*  character) {
+void initial_handle_escape(state_t* state, const char*  character) {
     (void) character;
 
     state->current->card = EQUAL;
@@ -180,7 +180,7 @@ void initial_handle_escape(state_t* state, lchar_t*  character) {
     set_escape_state(state);
 }
 
-void initial_handle_normal_character(state_t* state, lchar_t*  character) {
+void initial_handle_normal_character(state_t* state, const char*  character) {
     searchstring_t* search_string;
 
     (void) character;
@@ -196,13 +196,13 @@ void initial_handle_normal_character(state_t* state, lchar_t*  character) {
     set_literal_state(state);
 }
 
-void mc_wildcard_handle_percentage(state_t* state, lchar_t*  character) {
+void mc_wildcard_handle_percentage(state_t* state, const char*  character) {
     (void) character;
 
     CHECK_PERCENTAGE_STATE(state);
 }
 
-void mc_wildcard_handle_underscore(state_t* state, lchar_t*  character) {
+void mc_wildcard_handle_underscore(state_t* state, const char*  character) {
     (void) character;
 
     CHECK_PERCENTAGE_STATE(state);
@@ -211,7 +211,7 @@ void mc_wildcard_handle_underscore(state_t* state, lchar_t*  character) {
     set_sc_wildcard_state(state);
 }
 
-void mc_wildcard_handle_escape_character(state_t* state, lchar_t*  character) {
+void mc_wildcard_handle_escape_character(state_t* state, const char*  character) {
     (void) character;
 
     CHECK_PERCENTAGE_STATE(state);
@@ -219,7 +219,7 @@ void mc_wildcard_handle_escape_character(state_t* state, lchar_t*  character) {
     set_escape_state(state);
 }
 
-void mc_wildcard_handle_normal_character(state_t* state, lchar_t*  character) {
+void mc_wildcard_handle_normal_character(state_t* state, const char*  character) {
     searchstring_t* search_string;
 
     CHECK_PERCENTAGE_STATE(state);
@@ -241,7 +241,7 @@ void mc_wildcard_handle_normal_character(state_t* state, lchar_t*  character) {
     assert(state->to_error == NULL); \
 })
 
-void sc_wildcard_handle_percentage(state_t* state, lchar_t*  character) {
+void sc_wildcard_handle_percentage(state_t* state, const char*  character) {
     (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -251,7 +251,7 @@ void sc_wildcard_handle_percentage(state_t* state, lchar_t*  character) {
     set_mc_wildcard_state(state);
 }
 
-void sc_wildcard_handle_underscore(state_t* state, lchar_t*  character) {
+void sc_wildcard_handle_underscore(state_t* state, const char*  character) {
     (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -261,7 +261,7 @@ void sc_wildcard_handle_underscore(state_t* state, lchar_t*  character) {
     set_sc_wildcard_state(state);
 }
 
-void sc_wildcard_handle_escape_character(state_t* state, lchar_t*  character) {
+void sc_wildcard_handle_escape_character(state_t* state, const char*  character) {
     (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -269,7 +269,7 @@ void sc_wildcard_handle_escape_character(state_t* state, lchar_t*  character) {
     set_escape_state(state);
 }
 
-void sc_wildcard_handle_normal_character(state_t* state, lchar_t*  character) {
+void sc_wildcard_handle_normal_character(state_t* state, const char*  character) {
     searchstring_t* search_string;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -290,7 +290,7 @@ void sc_wildcard_handle_normal_character(state_t* state, lchar_t*  character) {
     assert(state->to_error == escape_handle_error); \
 })
 
-void escape_handle_normal_character(state_t* state, lchar_t*  character) {
+void escape_handle_normal_character(state_t* state, const char*  character) {
     searchstring_t* search_string;
 
     CHECK_ESCAPE_STATE(state);
@@ -302,17 +302,17 @@ void escape_handle_normal_character(state_t* state, lchar_t*  character) {
     set_literal_state(state);
 }
 
-void escape_handle_error(state_t* state, lchar_t*  character) {
-    // lchar_t character;
+void escape_handle_error(state_t* state, const char*  character) {
+    // char character;
     char* message_buffer;
 
     CHECK_ESCAPE_STATE(state);
 
     (void) character;
     // TODO: think of how to insert character in error string.
-    // character = *(lchar_t*) data;
+    // character = *(char*) data;
 
-    const char* error = "Non-escapable character.";
+    char* error = "Non-escapable character.";
 
     message_buffer = (char*) GDKmalloc(strlen(error) + 1);
 
@@ -334,15 +334,17 @@ static void increment_searchstring_list(state_t* state) {
 
     /*
      * We have reached the end of the current searchstring.
-     * So we are creating a new one.
+     * So we finalize the current one with a null terminator and create a new searchstring.
      * Append new searchstring to linked list and update state's current accordingly.
      */
+    append_character(&state->current->string_buffer, '\0');
+
     new = create_string_buffer();
     state->current->next = new;
     state->current = new;
 }
 
-void literal_handle_percentage(state_t* state, lchar_t*  character) {
+void literal_handle_percentage(state_t* state, const char*  character) {
     (void) character;
 
     CHECK_LITERAL_STATE(state);
@@ -355,7 +357,7 @@ void literal_handle_percentage(state_t* state, lchar_t*  character) {
     set_mc_wildcard_state(state);
 }
 
-void literal_handle_underscore(state_t* state, lchar_t*  character) {
+void literal_handle_underscore(state_t* state, const char*  character) {
     (void) character;
     searchstring_t* new;
 
@@ -370,7 +372,7 @@ void literal_handle_underscore(state_t* state, lchar_t*  character) {
     set_sc_wildcard_state(state);
 }
 
-void literal_handle_escape_character(state_t* state, lchar_t*  character) {
+void literal_handle_escape_character(state_t* state, const char*  character) {
     (void) character;
 
     CHECK_LITERAL_STATE(state);
@@ -378,7 +380,7 @@ void literal_handle_escape_character(state_t* state, lchar_t*  character) {
     set_escape_state(state);
 }
 
-void literal_handle_normal_character(state_t* state, lchar_t*  character) {
+void literal_handle_normal_character(state_t* state, const char*  character) {
     searchstring_t* search_string;
 
     CHECK_LITERAL_STATE(state);
@@ -390,9 +392,9 @@ void literal_handle_normal_character(state_t* state, lchar_t*  character) {
     set_literal_state(state);
 }
 
-static void handle_character(state_t* state, lchar_t* cursor) {
+static void handle_character(state_t* state, const char* cursor) {
 
-    if ( *state->esc_char ==  *cursor)
+    if ( state->esc_char ==  *cursor)
         return state->handle_escape_character(state, cursor);
 
     switch (*cursor) {
@@ -405,10 +407,10 @@ static void handle_character(state_t* state, lchar_t* cursor) {
     }
 }
 
-searchstring_t* create_searchstring_list(lchar_t* pattern, size_t length, lchar_t* esc_char) {
+searchstring_t* create_searchstring_list(const char* pattern, size_t length, char esc_char) {
     assert(length > 0);
 
-    lchar_t* cursor = pattern;
+    const char* cursor = pattern;
 
     state_t* state = create_initial_state(esc_char);
 
