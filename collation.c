@@ -31,14 +31,12 @@ extern __declspec(dllexport) char *UDFstrxfrm(blob **result, const char **input,
 extern __declspec(dllexport) char *UDFBATstrxfrm(bat *result, const bat *input, const bat * locale);
 extern __declspec(dllexport) char *UDFsimplelikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 
-char *
-UDFsimplelikematch(bit* result, const char **pattern, const char **target, const char** locale_id)
-{
+static char * simplelikematch(bit* found, const char **pattern, const char **target, UCollator* coll) {
 	UErrorCode status = U_ZERO_ERROR;
-	int pos = USEARCH_DONE;
-	UStringSearch *search = NULL;
+	UStringSearch* search;
+	char* return_status;
 
-	size_t pattern_capacity = strlen(*pattern);
+	size_t pattern_capacity = strlen(*pattern) + 1;
 	UChar u_pattern[pattern_capacity];
 	u_strFromUTF8Lenient(u_pattern, pattern_capacity, NULL, *pattern, -1, &status);
 
@@ -46,7 +44,7 @@ UDFsimplelikematch(bit* result, const char **pattern, const char **target, const
 		throw(MAL, "icu.simplelikematch", "Could not transform pattern string from utf-8 to utf-16.");
 	}
 
-	size_t target_capacity = strlen(*target);
+	size_t target_capacity = strlen(*target) + 1;
 	UChar u_target[target_capacity];
 	u_strFromUTF8Lenient(u_target, target_capacity, NULL, *target, -1, &status);
 
@@ -54,7 +52,33 @@ UDFsimplelikematch(bit* result, const char **pattern, const char **target, const
 		throw(MAL, "icu.simplelikematch", "Could not transform target string from utf-8 to utf-16.");
 	}
 
-	UCollator *coll = ucol_open(*locale_id, &status);
+	search = usearch_openFromCollator(u_pattern, -1, u_target, -1, coll, NULL, &status);
+
+	if (!U_SUCCESS(status)){
+		usearch_close(search);
+		ucol_close(coll);
+		throw(MAL, "icu.simplelikematch", "Could not instantiate ICU string search.");
+	}
+
+	*found = usearch_first(search, &status) != USEARCH_DONE;
+
+	usearch_close(search);
+
+	if (!U_SUCCESS(status)){
+		throw(MAL, "icu.simplelikematch", "ICU string search failed.");
+	}
+
+	return MAL_SUCCEED;
+}
+
+char *
+UDFsimplelikematch(bit* result, const char** pattern, const char** target, const char** locale_id) {
+	UErrorCode status = U_ZERO_ERROR;
+	UCollator* coll;
+	UStringSearch* search;
+	char* return_status;
+
+	coll = ucol_open(*locale_id, &status);
 
 	if (!U_SUCCESS(status)){
 		ucol_close(coll);
@@ -62,27 +86,12 @@ UDFsimplelikematch(bit* result, const char **pattern, const char **target, const
 	}
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
-	search = usearch_openFromCollator(u_pattern, -1, u_target, -1, coll, NULL, &status);
 
-	if (!U_SUCCESS(status)){
-		ucol_close(coll);
-		usearch_close(search);
-		throw(MAL, "icu.simplelikematch", "Could not instantiate ICU string search.");
-	}
+	return_status = simplelikematch(result, pattern, target, coll);
 
-	pos = usearch_first(search, &status);
-
-	printf("position: %d\n", pos);
-	*result = pos != USEARCH_DONE;
-
-	usearch_close(search);
 	ucol_close(coll);
 
-	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.simplelikematch", "ICU string search failed.");
-	}
-
-	return MAL_SUCCEED;
+	return return_status;
 }
 
 const size_t DEFAULT_MAX_STRING_KEY_SIZE = 128;
