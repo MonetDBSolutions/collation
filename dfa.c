@@ -187,7 +187,6 @@ void initial_handle_normal_character(state_t* state, const char*  character) {
 
     state->current->card = EQUAL;
     assert(state->current->start == 0);
-    CHECK_PERCENTAGE_STATE(state);
 
     search_string = state->current;
 
