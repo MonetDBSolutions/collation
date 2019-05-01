@@ -11,7 +11,7 @@ typedef enum cardinality {
 typedef struct {
     char* data;
     size_t capacity;
-    size_t ncharacters;
+    size_t nbytes;
 } string_buffer_t;
 
 typedef struct _searchstring_t {

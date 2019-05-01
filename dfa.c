@@ -57,7 +57,7 @@ static searchstring_t* create_string_buffer() {
     first->start = 0;
     first->string_buffer.data = (char*) GDKmalloc(INIT_BUFFER_SIZE * sizeof(char));
     first->string_buffer.capacity = INIT_BUFFER_SIZE;
-    first->string_buffer.ncharacters = 0;
+    first->string_buffer.nbytes = 0;
     first->next = NULL;
 }
 
@@ -132,14 +132,14 @@ static void append_character(string_buffer_t* buffer, const char character) {
 
     capacity = buffer->capacity;
 
-    if (capacity == buffer->ncharacters){
+    if (capacity == buffer->nbytes){
         // reallocate string buffer with exponential reallocation strategy.
         capacity = 2 * capacity;
         buffer->data = (char*) GDKrealloc(buffer->data, capacity * sizeof(char));
         buffer->capacity = capacity;
     }
 
-    buffer->data[buffer->ncharacters++] = character;
+    buffer->data[buffer->nbytes++] = character;
 }
 
 static state_t* create_initial_state(char esc_char) {
