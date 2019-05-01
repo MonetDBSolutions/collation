@@ -26,10 +26,9 @@ select * from foo where s like '%Mü%';
 select * from foo where s ilike '%SS%';
 select * from foo where s ilike '%ß%';
 
-select simplelikematch('FUSSBALL', 'fußball', 'de_DE');
-select simplelikematch('x', 'fußball', 'de_DE');
-select simplelikematch('fußball', 'FUSSBALL', 'de_DE');
-
-select simplelikematch('A', 'bcäbc', 'de_DE');
+select 'FUSSBALL' as pattern, 'fußball' as target, simplelikematch('FUSSBALL', 'fußball', 'de_DE');
+select 'x' as pattern, 'fußball' as target, simplelikematch('x', 'fußball', 'de_DE');
+select 'fußball' as pattern, 'FUSSBALL' as target, simplelikematch('fußball', 'FUSSBALL', 'de_DE');
+select 'A' as pattern, 'bcäbc' as target, simplelikematch('A', 'bcäbc', 'de_DE');
 
 ROLLBACK;
