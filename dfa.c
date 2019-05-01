@@ -416,8 +416,7 @@ searchstring_t* create_searchstring_list(const char* pattern, size_t length, cha
     searchstring_t* search_strings = state->current; // head of linked list of search string objects.
 
     for (size_t i = 0; i < length && state->error_string == NULL; i++) {
-        cursor++;
-        handle_character(state, cursor);
+        handle_character(state, cursor++);
     }
 
     // TODO: Do something with error.
