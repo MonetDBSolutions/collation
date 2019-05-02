@@ -156,16 +156,6 @@ static void append_character(string_buffer_t* buffer, const char character) {
     buffer->data[buffer->nbytes++] = character;
 }
 
-static state_t* create_initial_state(char esc_char) {
-    state_t* init_state;
-
-    init_state = (state_t*) GDKmalloc(sizeof(state_t));
-
-    set_initial_state(init_state, esc_char);
-
-    return init_state;
-}
-
 void initial_handle_percentage(state_t* state, const char  character) {
     (void) character;
 
@@ -455,18 +445,20 @@ static void handle_character(state_t* state, const char cursor) {
 searchstring_t* create_searchstring_list(const char* pattern, size_t length, char esc_char) {
     assert(length > 0);
 
+    state_t state;
+
+    set_initial_state(&state, esc_char);
+
     const char* cursor = pattern;
 
-    state_t* state = create_initial_state(esc_char);
+    searchstring_t* search_strings = state.current; // head of linked list of search string objects.
 
-    searchstring_t* search_strings = state->current; // head of linked list of search string objects.
-
-    for (size_t i = 0; i < length && state->error_string == NULL; i++) {
-        handle_character(state, *cursor);
+    for (size_t i = 0; i < length && state.error_string == NULL; i++) {
+        handle_character(&state, *cursor);
         ++cursor;
     }
 
-    state->finalize(state);
+    state.finalize(&state);
 
     return search_strings;
 }
