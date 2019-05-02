@@ -156,7 +156,7 @@ static void append_character(search_string_t* buffer, const char character) {
     buffer->data[buffer->nbytes++] = character;
 }
 
-void initial_handle_percentage(state_t* state, const char  character) {
+void initial_handle_percentage(state_t* state, const char character) {
     (void) character;
 
     state->current->card = GREATER_OR_EQUAL;
@@ -165,7 +165,7 @@ void initial_handle_percentage(state_t* state, const char  character) {
     set_mc_wildcard_state(state);
 }
 
-void initial_handle_underscore(state_t* state, const char  character) {
+void initial_handle_underscore(state_t* state, const char character) {
     (void) character;
 
     state->current->card = EQUAL;
@@ -175,7 +175,7 @@ void initial_handle_underscore(state_t* state, const char  character) {
     set_sc_wildcard_state(state);
 }
 
-void initial_handle_escape(state_t* state, const char  character) {
+void initial_handle_escape(state_t* state, const char character) {
     (void) character;
 
     state->current->card = EQUAL;
@@ -184,7 +184,7 @@ void initial_handle_escape(state_t* state, const char  character) {
     set_escape_state(state);
 }
 
-void initial_handle_normal_character(state_t* state, const char  character) {
+void initial_handle_normal_character(state_t* state, const char character) {
     searchcriterium_t* searchcriterium;
 
     (void) character;
@@ -199,13 +199,13 @@ void initial_handle_normal_character(state_t* state, const char  character) {
     set_literal_state(state);
 }
 
-void mc_wildcard_handle_percentage(state_t* state, const char  character) {
+void mc_wildcard_handle_percentage(state_t* state, const char character) {
     (void) character;
 
     CHECK_PERCENTAGE_STATE(state);
 }
 
-void mc_wildcard_handle_underscore(state_t* state, const char  character) {
+void mc_wildcard_handle_underscore(state_t* state, const char character) {
     (void) character;
 
     CHECK_PERCENTAGE_STATE(state);
@@ -214,7 +214,7 @@ void mc_wildcard_handle_underscore(state_t* state, const char  character) {
     set_sc_wildcard_state(state);
 }
 
-void mc_wildcard_handle_escape_character(state_t* state, const char  character) {
+void mc_wildcard_handle_escape_character(state_t* state, const char character) {
     (void) character;
 
     CHECK_PERCENTAGE_STATE(state);
@@ -222,7 +222,7 @@ void mc_wildcard_handle_escape_character(state_t* state, const char  character) 
     set_escape_state(state);
 }
 
-void mc_wildcard_handle_normal_character(state_t* state, const char  character) {
+void mc_wildcard_handle_normal_character(state_t* state, const char character) {
     searchcriterium_t* searchcriterium;
 
     CHECK_PERCENTAGE_STATE(state);
@@ -245,7 +245,7 @@ void mc_wildcard_handle_normal_character(state_t* state, const char  character) 
     assert(state->finalize == wildcard_finalize); \
 })
 
-void sc_wildcard_handle_percentage(state_t* state, const char  character) {
+void sc_wildcard_handle_percentage(state_t* state, const char character) {
     (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -255,7 +255,7 @@ void sc_wildcard_handle_percentage(state_t* state, const char  character) {
     set_mc_wildcard_state(state);
 }
 
-void sc_wildcard_handle_underscore(state_t* state, const char  character) {
+void sc_wildcard_handle_underscore(state_t* state, const char character) {
     (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -265,7 +265,7 @@ void sc_wildcard_handle_underscore(state_t* state, const char  character) {
     set_sc_wildcard_state(state);
 }
 
-void sc_wildcard_handle_escape_character(state_t* state, const char  character) {
+void sc_wildcard_handle_escape_character(state_t* state, const char character) {
     (void) character;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -273,7 +273,7 @@ void sc_wildcard_handle_escape_character(state_t* state, const char  character) 
     set_escape_state(state);
 }
 
-void sc_wildcard_handle_normal_character(state_t* state, const char  character) {
+void sc_wildcard_handle_normal_character(state_t* state, const char character) {
     searchcriterium_t* searchcriterium;
 
     CHECK_UNDERSCORE_STATE(state);
@@ -300,7 +300,7 @@ void wildcard_finalize(state_t* state) {
     assert(state->finalize == escape_finalize); \
 })
 
-void escape_handle_normal_character(state_t* state, const char  character) {
+void escape_handle_normal_character(state_t* state, const char character) {
     searchcriterium_t* searchcriterium;
 
     CHECK_ESCAPE_STATE(state);
@@ -312,7 +312,7 @@ void escape_handle_normal_character(state_t* state, const char  character) {
     set_literal_state(state);
 }
 
-void escape_handle_error(state_t* state, const char  character) {
+void escape_handle_error(state_t* state, const char character) {
     // char character;
     char* message_buffer;
 
@@ -368,7 +368,7 @@ static void increment_searchcriterium_list(state_t* state) {
     state->current = new;
 }
 
-void literal_handle_percentage(state_t* state, const char  character) {
+void literal_handle_percentage(state_t* state, const char character) {
     (void) character;
 
     CHECK_LITERAL_STATE(state);
@@ -381,7 +381,7 @@ void literal_handle_percentage(state_t* state, const char  character) {
     set_mc_wildcard_state(state);
 }
 
-void literal_handle_underscore(state_t* state, const char  character) {
+void literal_handle_underscore(state_t* state, const char character) {
     (void) character;
     searchcriterium_t* new;
 
@@ -396,7 +396,7 @@ void literal_handle_underscore(state_t* state, const char  character) {
     set_sc_wildcard_state(state);
 }
 
-void literal_handle_escape_character(state_t* state, const char  character) {
+void literal_handle_escape_character(state_t* state, const char character) {
     (void) character;
 
     CHECK_LITERAL_STATE(state);
@@ -404,7 +404,7 @@ void literal_handle_escape_character(state_t* state, const char  character) {
     set_escape_state(state);
 }
 
-void literal_handle_normal_character(state_t* state, const char  character) {
+void literal_handle_normal_character(state_t* state, const char character) {
     searchcriterium_t* searchcriterium;
 
     CHECK_LITERAL_STATE(state);
