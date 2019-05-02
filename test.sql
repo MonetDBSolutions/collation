@@ -26,6 +26,14 @@ select * from foo where s like '%Mü%';
 select * from foo where s ilike '%SS%';
 select * from foo where s ilike '%ß%';
 
+
+
+with strings as (select 'c%de' as pattern, 'cbde' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '\\_%\\%\\_' as pattern, '_a%_' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
 with strings as (select 'FUSSBALL' as pattern, 'fußball' as target)
     select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
 
@@ -117,6 +125,9 @@ with strings as (select '_%A_%' as pattern, 'bcäbc' as target)
     select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
 
 with strings as (select '__%_bc' as pattern, 'bcäbc' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
+with strings as (select '\\_\\_\\_\\_' as pattern, 'xxxx' as target)
     select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
 
 ROLLBACK;
