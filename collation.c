@@ -98,6 +98,7 @@ static char * simplelikematch(bit* found, const char *pattern, const char *targe
 	return MAL_SUCCEED;
 }
 
+// TODO: Make this UDF available as simple search or something.
 char *
 UDFsimplelikematch(bit* result, const char** pattern, const char** target, const char** locale_id) {
 	UErrorCode status = U_ZERO_ERROR;
