@@ -58,7 +58,7 @@ finalize_function_t literal_finalize;
 
 const size_t INIT_BUFFER_SIZE = 128;
 
-static searchstring_t* create_string_buffer() {
+static searchstring_t* create_searchstring() {
     searchstring_t* first;
 
     first = (searchstring_t*) GDKmalloc(sizeof(searchstring_t));
@@ -72,7 +72,7 @@ static searchstring_t* create_string_buffer() {
 static void set_initial_state(state_t* state, char esc_char) {
     searchstring_t* first;
 
-    first = create_string_buffer();
+    first = create_searchstring();
 
     state->esc_char = esc_char;
     state->current = first;
@@ -372,7 +372,7 @@ static void increment_searchstring_list(state_t* state) {
      */
     append_character(&state->current->string_buffer, '\0');
 
-    new = create_string_buffer();
+    new = create_searchstring();
     state->current->next = new;
     state->current = new;
 }
