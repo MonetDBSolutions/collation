@@ -334,6 +334,7 @@ void escape_handle_error(state_t* state, const char  character) {
     // character = *(char*) data;
 
     char* error = "Non-escapable character.";
+    // TODO: Make sure there is an actual error message.
 
     message_buffer = (char*) GDKmalloc(strlen(error) + 1);
 
@@ -345,6 +346,7 @@ void escape_finalize(state_t* state) {
     char* message_buffer;
 
     char* error = "Missing actual escape character.";
+    // TODO: Make sure there is an actual error message.
 
     message_buffer = (char*) GDKmalloc(strlen(error) + 1);
 
