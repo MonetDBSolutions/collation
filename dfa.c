@@ -425,8 +425,6 @@ void literal_handle_normal_character(state_t* state, const char  character) {
     append_character(&search_string->string_buffer, character);
 
     set_literal_state(state);
-
-    increment_searchstring_list(state);
 }
 
 void literal_finalize(state_t* state) {
