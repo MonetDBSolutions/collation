@@ -442,20 +442,17 @@ static void handle_character(state_t* state, const char cursor) {
     }
 }
 
-searchstring_t* create_searchstring_list(const char* pattern, size_t length, char esc_char) {
-    assert(length > 0);
+searchstring_t* create_searchstring_list(const char* pattern, char esc_char) {
+    assert(strlen(pattern) > 0);
 
     state_t state;
 
     set_initial_state(&state, esc_char);
 
-    const char* cursor = pattern;
-
     searchstring_t* search_strings = state.current; // head of linked list of search string objects.
 
-    for (size_t i = 0; i < length && state.error_string == NULL; i++) {
+    for (const char* cursor = pattern; *cursor != '\0' && state.error_string == NULL; ++cursor) {
         handle_character(&state, *cursor);
-        ++cursor;
     }
 
     state.finalize(&state);

@@ -21,4 +21,4 @@ typedef struct _searchstring_t {
     struct _searchstring_t* next;
 } searchstring_t;
 
-searchstring_t* create_searchstring_list(const char* pattern, size_t length, char esc_char);
+searchstring_t* create_searchstring_list(const char* pattern, char esc_char);

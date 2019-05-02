@@ -189,8 +189,6 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 	char* return_status;
 	searchstring_t* head;
 
-	int pattern_length = strlen(*pattern);
-
 	*result = false;
 
 	if (pattern == NULL) // NULL pattern implies false match
@@ -199,7 +197,7 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 	if (target == NULL) // NULL target implies false match
 		return MAL_SUCCEED;
 
-	if (!pattern_length) // empty pattern implies false match
+	if (!strlen(*pattern)) // empty pattern implies false match
 		return MAL_SUCCEED;
 
 	coll = ucol_open(*locale_id, &status);
@@ -211,7 +209,7 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
 
-	head = create_searchstring_list(*pattern, pattern_length, '\\');
+	head = create_searchstring_list(*pattern, '\\');
 
 	size_t target_capacity = strlen(*target) + 1;
 	UChar u_target[target_capacity];
