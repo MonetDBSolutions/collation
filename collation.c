@@ -106,6 +106,15 @@ UDFsimplelikematch(bit* result, const char** pattern, const char** target, const
 	UStringSearch* search;
 	char* return_status;
 
+	if (pattern == NULL) // NULL pattern implies false match
+		return MAL_SUCCEED;
+
+	if (target == NULL) // NULL target implies false match
+		return MAL_SUCCEED;
+
+	if (!strlen(*pattern)) // empty pattern implies false match
+		return MAL_SUCCEED;
+
 	coll = ucol_open(*locale_id, &status);
 
 	if (!U_SUCCESS(status)){
@@ -114,8 +123,6 @@ UDFsimplelikematch(bit* result, const char** pattern, const char** target, const
 	}
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
-
-	// TODO: check if pattern and/or target are null.
 
 	return_status = simplelikematch(result, *pattern, *target, coll);
 
