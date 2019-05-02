@@ -184,7 +184,6 @@ void initial_handle_escape(state_t* state, const char  character) {
     set_escape_state(state);
 }
 
-// TODO all these const char* pointers can be normal copy parameters
 void initial_handle_normal_character(state_t* state, const char  character) {
     searchcriterium_t* searchcriterium;
 
