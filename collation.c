@@ -34,7 +34,7 @@ extern __declspec(dllexport) char *UDFBATstrxfrm(bat *result, const bat *input, 
 extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 extern __declspec(dllexport) char *UDFsimplelikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 
-static char* first_search(UStringSearch** search, int offset, const char* pattern, const char* target, UCollator* col) {
+static char* first_search(UStringSearch** search, int offset, const char* pattern, const UChar* u_target, UCollator* col) {
 	UErrorCode status = U_ZERO_ERROR;
 	char* return_status;
 
@@ -44,14 +44,6 @@ static char* first_search(UStringSearch** search, int offset, const char* patter
 
 	if (!U_SUCCESS(status)){
 		throw(MAL, "icu.simplelikematch", "Could not transform pattern string from utf-8 to utf-16.");
-	}
-
-	size_t target_capacity = strlen(target) + 1;
-	UChar u_target[target_capacity];
-	u_strFromUTF8Lenient(u_target, target_capacity, NULL, target, -1, &status);
-
-	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.simplelikematch", "Could not transform target string from utf-8 to utf-16.");
 	}
 
 	*search = usearch_openFromCollator(u_pattern, -1, u_target, -1, col, NULL, &status);
@@ -88,7 +80,15 @@ static char * simplelikematch(bit* found, const char *pattern, const char *targe
 	UStringSearch* search;
 	char* return_status;
 
-	if (return_status = first_search(&search, 0, pattern, target, coll))
+	size_t target_capacity = strlen(target) + 1;
+	UChar u_target[target_capacity];
+	u_strFromUTF8Lenient(u_target, target_capacity, NULL, target, -1, &status);
+
+	if (!U_SUCCESS(status)){
+		throw(MAL, "icu.simplelikematch", "Could not transform target string from utf-8 to utf-16.");
+	}
+
+	if (return_status = first_search(&search, 0, pattern, u_target, coll))
 		return return_status;
 
 	*found =  usearch_getMatchedStart(search) != USEARCH_DONE;
@@ -123,16 +123,28 @@ UDFsimplelikematch(bit* result, const char** pattern, const char** target, const
 	return return_status;
 }
 
-static char* likematch_recursive(bit* found, searchstring_t* current, int offset, const char* target, UCollator* coll) {
+static char* likematch_recursive(bit* found, searchstring_t* current, int offset, const UChar* target, const int nunits, UCollator* coll) {
 	UStringSearch* search;
 	int pos;
 	char* return_status;
-	bit found_next = false;
 
 	*found = false;
 
-	if (return_status = first_search(&search, offset, current->string_buffer.data, target, coll)) {
-		return return_status;
+	if (strlen(current->string_buffer.data)) {
+		if (return_status = first_search(&search, offset, current->string_buffer.data, target, coll)) {
+			return return_status;
+		}
+	}
+	else {
+		// last part of pattern.
+		*found = nunits >= (offset + current->start);
+
+		if (current->card == EQUAL) {
+			// Expect this to happen less frequent hence it is in a branch.
+			*found = nunits == (offset + current->start);
+		}
+
+		return MAL_SUCCEED;
 	}
 
 	do {
@@ -145,20 +157,18 @@ static char* likematch_recursive(bit* found, searchstring_t* current, int offset
 
 		*found = pos >= (offset + current->start);
 
-		if (current->card == EQUAL)
+		if (current->card == EQUAL) {
 			// Expect this to happen less frequent hence it is in a branch.
 			*found = pos == (offset + current->start);
+		}
 
 		if (*found && current->next) {
 			int next_offset =  offset + usearch_getMatchedLength(search) + current->start;
 
-			// TODO: it is a bit of a shame that the whole target has to be converted to Uchar* type for every call to likematch_recursive
-			if (return_status = likematch_recursive(&found_next, current->next, next_offset, target, coll)) {
+			if (return_status = likematch_recursive(found, current->next, next_offset, target, nunits, coll)) {
 				usearch_close(search);
 				return return_status;
 			}
-
-			*found &= found_next;
 		}
 
 		if(return_status = next_search(search))
@@ -203,7 +213,16 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 
 	head = create_searchstring_list(*pattern, pattern_length, '\\');
 
-	return_status = likematch_recursive(result, head, 0, *target, coll);
+	size_t target_capacity = strlen(*target) + 1;
+	UChar u_target[target_capacity];
+	int nunits;
+	u_strFromUTF8Lenient(u_target, target_capacity, &nunits, *target, -1, &status);
+
+	if (!U_SUCCESS(status)){
+		throw(MAL, "icu.simplelikematch", "Could not transform target string from utf-8 to utf-16.");
+	}
+
+	return_status = likematch_recursive(result, head, 0, u_target, nunits, coll);
 
 	return return_status;
 }

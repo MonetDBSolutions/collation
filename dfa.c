@@ -6,6 +6,9 @@ typedef struct state_t state_t;
 
 typedef void transition_function_t(state_t*, const char);
 
+typedef void finalize_function_t(state_t*);
+
+
 typedef enum state_type {
     MULTI_CHARACTER_WILDCARD,
     SINGLE_CHARACTER_WILDCARD,
@@ -23,6 +26,7 @@ struct state_t {
     transition_function_t* handle_escape_character;
     transition_function_t* handle_normal_character;
     transition_function_t* to_error;
+    finalize_function_t*   finalize;
 };
 
 transition_function_t initial_handle_percentage;
@@ -47,6 +51,10 @@ transition_function_t literal_handle_normal_character;
 
 transition_function_t escape_handle_normal_character;
 transition_function_t escape_handle_error;
+
+finalize_function_t wildcard_finalize;
+finalize_function_t escape_finalize;
+finalize_function_t literal_finalize;
 
 const size_t INIT_BUFFER_SIZE = 128;
 
@@ -75,6 +83,7 @@ static void set_initial_state(state_t* state, char esc_char) {
     state->handle_escape_character  = initial_handle_escape;
     state->handle_normal_character  = initial_handle_normal_character;
     state->to_error                 = NULL;
+    state->finalize                 = NULL;
 }
 
 static void set_mc_wildcard_state(state_t* state) {
@@ -85,6 +94,7 @@ static void set_mc_wildcard_state(state_t* state) {
     state->handle_escape_character  = mc_wildcard_handle_escape_character;
     state->handle_normal_character  = mc_wildcard_handle_normal_character;
     state->to_error                 = NULL;
+    state->finalize                 = wildcard_finalize;
 }
 
 static void set_sc_wildcard_state(state_t* state) {
@@ -95,6 +105,7 @@ static void set_sc_wildcard_state(state_t* state) {
     state->handle_escape_character  = sc_wildcard_handle_escape_character;
     state->handle_normal_character  = sc_wildcard_handle_normal_character;
     state->to_error                 = NULL;
+    state->finalize                 = wildcard_finalize;
 }
 
 static void set_escape_state(state_t* state) {
@@ -105,6 +116,7 @@ static void set_escape_state(state_t* state) {
     state->handle_escape_character  = escape_handle_normal_character;
     state->handle_normal_character  = NULL;
     state->to_error                 = escape_handle_error;
+    state->finalize                 = escape_finalize;
 }
 
 static void set_literal_state(state_t* state) {
@@ -115,6 +127,7 @@ static void set_literal_state(state_t* state) {
     state->handle_escape_character  = literal_handle_escape_character;
     state->handle_normal_character  = literal_handle_normal_character;
     state->to_error                 = NULL;
+    state->finalize                 = literal_finalize;
 }
 
 #define CHECK_PERCENTAGE_STATE(state) ({\
@@ -125,6 +138,7 @@ static void set_literal_state(state_t* state) {
     assert(state->handle_escape_character == mc_wildcard_handle_escape_character); \
     assert(state->handle_normal_character == mc_wildcard_handle_normal_character); \
     assert(state->to_error == NULL); \
+    assert(state->finalize == wildcard_finalize); \
 })
 
 static void append_character(string_buffer_t* buffer, const char character) {
@@ -239,6 +253,7 @@ void mc_wildcard_handle_normal_character(state_t* state, const char  character) 
     assert(state->handle_escape_character == sc_wildcard_handle_escape_character); \
     assert(state->handle_normal_character == sc_wildcard_handle_normal_character); \
     assert(state->to_error == NULL); \
+    assert(state->finalize == wildcard_finalize); \
 })
 
 void sc_wildcard_handle_percentage(state_t* state, const char  character) {
@@ -281,6 +296,11 @@ void sc_wildcard_handle_normal_character(state_t* state, const char  character) 
     set_literal_state(state);
 }
 
+void wildcard_finalize(state_t* state) {
+
+    append_character(&state->current->string_buffer, '\0');
+}
+
 #define CHECK_ESCAPE_STATE(state) ({\
     assert(state->error_string == NULL); \
     assert(state->handle_percentage == escape_handle_normal_character); \
@@ -288,6 +308,7 @@ void sc_wildcard_handle_normal_character(state_t* state, const char  character) 
     assert(state->handle_escape_character == escape_handle_normal_character); \
     assert(state->handle_normal_character == NULL); \
     assert(state->to_error == escape_handle_error); \
+    assert(state->finalize == escape_finalize); \
 })
 
 void escape_handle_normal_character(state_t* state, const char  character) {
@@ -320,6 +341,17 @@ void escape_handle_error(state_t* state, const char  character) {
     state->error_string = message_buffer;
 }
 
+void escape_finalize(state_t* state) {
+    char* message_buffer;
+
+    char* error = "Missing actual escape character.";
+
+    message_buffer = (char*) GDKmalloc(strlen(error) + 1);
+
+    // Setting the error_string in the state signals an exception of the parsing process.
+    state->error_string = message_buffer;
+}
+
 #define CHECK_LITERAL_STATE(state) ({\
     assert(state->error_string == NULL); \
     assert(state->handle_percentage == literal_handle_percentage); \
@@ -327,6 +359,7 @@ void escape_handle_error(state_t* state, const char  character) {
     assert(state->handle_escape_character == literal_handle_escape_character); \
     assert(state->handle_normal_character == literal_handle_normal_character); \
     assert(state->to_error == NULL); \
+    assert(state->finalize == literal_finalize); \
 })
 
 static void increment_searchstring_list(state_t* state) {
@@ -390,6 +423,18 @@ void literal_handle_normal_character(state_t* state, const char  character) {
     append_character(&search_string->string_buffer, character);
 
     set_literal_state(state);
+
+    increment_searchstring_list(state);
+}
+
+void literal_finalize(state_t* state) {
+
+    increment_searchstring_list(state);
+
+    append_character(&state->current->string_buffer, '\0');
+
+    assert(state->current->start == 0);
+    state->current->card = EQUAL;
 }
 
 static void handle_character(state_t* state, const char cursor) {
@@ -421,8 +466,7 @@ searchstring_t* create_searchstring_list(const char* pattern, size_t length, cha
         ++cursor;
     }
 
-    // Finalize final pattern chunk. Perhaps we need to a bit more here later on...
-    append_character(&state->current->string_buffer, '\0');
+    state->finalize(state);
 
     return search_strings;
 }
