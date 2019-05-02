@@ -163,7 +163,7 @@ static char* likematch_recursive(bit* found, searchstring_t* current, int offset
 		}
 
 		if (*found && current->next) {
-			int next_offset =  offset + usearch_getMatchedLength(search) + current->start;
+			int next_offset =  pos + usearch_getMatchedLength(search);
 
 			if (return_status = likematch_recursive(found, current->next, next_offset, target, nunits, coll)) {
 				usearch_close(search);
