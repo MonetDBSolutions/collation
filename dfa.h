@@ -12,13 +12,13 @@ typedef struct {
     char* data;
     size_t capacity;
     size_t nbytes;
-} string_buffer_t;
+} search_string_t;
 
-typedef struct _searchstring_t {
+typedef struct _searchcriterium_t {
     int start;
     cardinality_t card;
-    string_buffer_t string_buffer;
-    struct _searchstring_t* next;
-} searchstring_t;
+    search_string_t search_string;
+    struct _searchcriterium_t* next;
+} searchcriterium_t;
 
-searchstring_t* create_searchstring_list(const char* pattern, char esc_char);
+searchcriterium_t* create_searchcriteria(const char* pattern, char esc_char);

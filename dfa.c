@@ -19,7 +19,7 @@ typedef enum state_type {
 struct state_t {
     state_type_t type;
     char esc_char;
-    searchstring_t* current;
+    searchcriterium_t* current;
     char* error_string;
     transition_function_t* handle_percentage;
     transition_function_t* handle_underscore;
@@ -58,21 +58,21 @@ finalize_function_t literal_finalize;
 
 const size_t INIT_BUFFER_SIZE = 128;
 
-static searchstring_t* create_searchstring() {
-    searchstring_t* first;
+static searchcriterium_t* create_searchcriterium() {
+    searchcriterium_t* first;
 
-    first = (searchstring_t*) GDKmalloc(sizeof(searchstring_t));
+    first = (searchcriterium_t*) GDKmalloc(sizeof(searchcriterium_t));
     first->start = 0;
-    first->string_buffer.data = (char*) GDKmalloc(INIT_BUFFER_SIZE * sizeof(char));
-    first->string_buffer.capacity = INIT_BUFFER_SIZE;
-    first->string_buffer.nbytes = 0;
+    first->search_string.data = (char*) GDKmalloc(INIT_BUFFER_SIZE * sizeof(char));
+    first->search_string.capacity = INIT_BUFFER_SIZE;
+    first->search_string.nbytes = 0;
     first->next = NULL;
 }
 
 static void set_initial_state(state_t* state, char esc_char) {
-    searchstring_t* first;
+    searchcriterium_t* first;
 
-    first = create_searchstring();
+    first = create_searchcriterium();
 
     state->esc_char = esc_char;
     state->current = first;
@@ -141,7 +141,7 @@ static void set_literal_state(state_t* state) {
     assert(state->finalize == wildcard_finalize); \
 })
 
-static void append_character(string_buffer_t* buffer, const char character) {
+static void append_character(search_string_t* buffer, const char character) {
     size_t capacity;
 
     capacity = buffer->capacity;
@@ -186,16 +186,16 @@ void initial_handle_escape(state_t* state, const char  character) {
 
 // TODO all these const char* pointers can be normal copy parameters
 void initial_handle_normal_character(state_t* state, const char  character) {
-    searchstring_t* search_string;
+    searchcriterium_t* searchcriterium;
 
     (void) character;
 
     state->current->card = EQUAL;
     assert(state->current->start == 0);
 
-    search_string = state->current;
+    searchcriterium = state->current;
 
-    append_character(&search_string->string_buffer, character);
+    append_character(&searchcriterium->search_string, character);
 
     set_literal_state(state);
 }
@@ -224,13 +224,13 @@ void mc_wildcard_handle_escape_character(state_t* state, const char  character) 
 }
 
 void mc_wildcard_handle_normal_character(state_t* state, const char  character) {
-    searchstring_t* search_string;
+    searchcriterium_t* searchcriterium;
 
     CHECK_PERCENTAGE_STATE(state);
 
-    search_string = state->current;
+    searchcriterium = state->current;
 
-    append_character(&search_string->string_buffer, character);
+    append_character(&searchcriterium->search_string, character);
 
     set_literal_state(state);
 }
@@ -275,20 +275,20 @@ void sc_wildcard_handle_escape_character(state_t* state, const char  character) 
 }
 
 void sc_wildcard_handle_normal_character(state_t* state, const char  character) {
-    searchstring_t* search_string;
+    searchcriterium_t* searchcriterium;
 
     CHECK_UNDERSCORE_STATE(state);
 
-    search_string = state->current;
+    searchcriterium = state->current;
 
-    append_character(&search_string->string_buffer, character);
+    append_character(&searchcriterium->search_string, character);
 
     set_literal_state(state);
 }
 
 void wildcard_finalize(state_t* state) {
 
-    append_character(&state->current->string_buffer, '\0');
+    append_character(&state->current->search_string, '\0');
 }
 
 #define CHECK_ESCAPE_STATE(state) ({\
@@ -302,13 +302,13 @@ void wildcard_finalize(state_t* state) {
 })
 
 void escape_handle_normal_character(state_t* state, const char  character) {
-    searchstring_t* search_string;
+    searchcriterium_t* searchcriterium;
 
     CHECK_ESCAPE_STATE(state);
 
-    search_string = state->current;
+    searchcriterium = state->current;
 
-    append_character(&search_string->string_buffer, character);
+    append_character(&searchcriterium->search_string, character);
 
     set_literal_state(state);
 }
@@ -354,17 +354,17 @@ void escape_finalize(state_t* state) {
     assert(state->finalize == literal_finalize); \
 })
 
-static void increment_searchstring_list(state_t* state) {
-    searchstring_t* new;
+static void increment_searchcriterium_list(state_t* state) {
+    searchcriterium_t* new;
 
     /*
-     * We have reached the end of the current searchstring.
-     * So we finalize the current one with a null terminator and create a new searchstring.
-     * Append new searchstring to linked list and update state's current accordingly.
+     * We have reached the end of the current searchcriterium.
+     * So we finalize the current one with a null terminator and create a new searchcriterium.
+     * Append new searchcriterium to linked list and update state's current accordingly.
      */
-    append_character(&state->current->string_buffer, '\0');
+    append_character(&state->current->search_string, '\0');
 
-    new = create_searchstring();
+    new = create_searchcriterium();
     state->current->next = new;
     state->current = new;
 }
@@ -374,7 +374,7 @@ void literal_handle_percentage(state_t* state, const char  character) {
 
     CHECK_LITERAL_STATE(state);
 
-    increment_searchstring_list(state);
+    increment_searchcriterium_list(state);
 
     assert(state->current->start == 0);
     state->current->card = GREATER_OR_EQUAL;
@@ -384,11 +384,11 @@ void literal_handle_percentage(state_t* state, const char  character) {
 
 void literal_handle_underscore(state_t* state, const char  character) {
     (void) character;
-    searchstring_t* new;
+    searchcriterium_t* new;
 
     CHECK_LITERAL_STATE(state);
 
-    increment_searchstring_list(state);
+    increment_searchcriterium_list(state);
 
     assert(state->current->start == 0);
     state->current->card = EQUAL;
@@ -406,22 +406,22 @@ void literal_handle_escape_character(state_t* state, const char  character) {
 }
 
 void literal_handle_normal_character(state_t* state, const char  character) {
-    searchstring_t* search_string;
+    searchcriterium_t* searchcriterium;
 
     CHECK_LITERAL_STATE(state);
 
-    search_string = state->current;
+    searchcriterium = state->current;
 
-    append_character(&search_string->string_buffer, character);
+    append_character(&searchcriterium->search_string, character);
 
     set_literal_state(state);
 }
 
 void literal_finalize(state_t* state) {
 
-    increment_searchstring_list(state);
+    increment_searchcriterium_list(state);
 
-    append_character(&state->current->string_buffer, '\0');
+    append_character(&state->current->search_string, '\0');
 
     assert(state->current->start == 0);
     state->current->card = EQUAL;
@@ -442,14 +442,14 @@ static void handle_character(state_t* state, const char cursor) {
     }
 }
 
-searchstring_t* create_searchstring_list(const char* pattern, char esc_char) {
+searchcriterium_t* create_searchcriteria(const char* pattern, char esc_char) {
     assert(strlen(pattern) > 0);
 
     state_t state;
 
     set_initial_state(&state, esc_char);
 
-    searchstring_t* search_strings = state.current; // head of linked list of search string objects.
+    searchcriterium_t* searchcriteria = state.current; // head of linked list of search string objects.
 
     for (const char* cursor = pattern; *cursor != '\0' && state.error_string == NULL; ++cursor) {
         handle_character(&state, *cursor);
@@ -457,5 +457,5 @@ searchstring_t* create_searchstring_list(const char* pattern, char esc_char) {
 
     state.finalize(&state);
 
-    return search_strings;
+    return searchcriteria;
 }

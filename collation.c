@@ -123,15 +123,15 @@ UDFsimplelikematch(bit* result, const char** pattern, const char** target, const
 	return return_status;
 }
 
-static char* likematch_recursive(bit* found, searchstring_t* current, int offset, const UChar* target, const int nunits, UCollator* coll) {
+static char* likematch_recursive(bit* found, searchcriterium_t* current, int offset, const UChar* target, const int nunits, UCollator* coll) {
 	UStringSearch* search;
 	int pos;
 	char* return_status;
 
 	*found = false;
 
-	if (strlen(current->string_buffer.data)) {
-		if (return_status = first_search(&search, offset, current->string_buffer.data, target, coll)) {
+	if (strlen(current->search_string.data)) {
+		if (return_status = first_search(&search, offset, current->search_string.data, target, coll)) {
 			return return_status;
 		}
 	}
@@ -187,7 +187,7 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 	UCollator* coll;
 	UStringSearch* search;
 	char* return_status;
-	searchstring_t* head;
+	searchcriterium_t* head;
 
 	*result = false;
 
@@ -209,7 +209,7 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
 
-	head = create_searchstring_list(*pattern, '\\');
+	head = create_searchcriteria(*pattern, '\\');
 
 	size_t target_capacity = strlen(*target) + 1;
 	UChar u_target[target_capacity];
