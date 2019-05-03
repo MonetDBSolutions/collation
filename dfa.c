@@ -315,7 +315,6 @@ void escape_handle_error(state_t* state, const char character) {
     // character = *(char*) data;
 
     char* error = "Non-escapable character:";
-    // TODO: Make sure there is an actual error message.
 
     message_buffer = (char*) GDKmalloc(strlen(error) + 5);
 
@@ -329,11 +328,11 @@ void escape_finalize(state_t* state) {
     char* message_buffer;
 
     char* error = "Missing actual escape character.";
-    // TODO: Make sure there is an actual error message.
 
     message_buffer = (char*) GDKmalloc(strlen(error) + 1);
 
-    // Setting the error_string in the state signals an exception of the parsing process.
+    strcpy(message_buffer, error);
+
     state->error_string = message_buffer;
 }
 
@@ -443,19 +442,24 @@ char* create_searchcriteria(searchcriterium_t** searchcriteria, const char* patt
 
     *searchcriteria = state.current; // head of linked list of search string objects.
 
-    for (const char* cursor = pattern; *cursor != '\0' && state.error_string == NULL; ++cursor) {
+    for (const char* cursor = pattern; *cursor != '\0'; ++cursor) {
         handle_character(&state, *cursor);
+
+        if (state.error_string) {
+            // GDKfree(*searchcriteria);
+            return state.error_string;
+        }
     }
+
+    state.finalize(&state);
 
     if (state.error_string) {
         // GDKfree(*searchcriteria);
         return state.error_string;
     }
 
-    state.finalize(&state);
     return NULL;
 }
 
 // TODO: clean up function for searchcriteria string.
-// TODO: null checks for malloc failures
-
+// TODO: null checks for malloc failuress
