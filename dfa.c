@@ -455,3 +455,7 @@ char* create_searchcriteria(searchcriterium_t** searchcriteria, const char* patt
     state.finalize(&state);
     return NULL;
 }
+
+// TODO: clean up function for searchcriteria string.
+// TODO: null checks for malloc failures
+
