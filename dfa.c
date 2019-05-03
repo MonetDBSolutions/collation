@@ -310,10 +310,6 @@ void escape_handle_error(state_t* state, const char character) {
 
     CHECK_ESCAPE_STATE(state);
 
-    (void) character;
-    // TODO: think of how to insert character in error string.
-    // character = *(char*) data;
-
     char* error = "Non-escapable character:";
 
     message_buffer = (char*) GDKmalloc(strlen(error) + 5);
