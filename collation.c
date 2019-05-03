@@ -231,6 +231,8 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 
 	return_status = likematch_recursive(result, head, 0, u_target, nunits, coll);
 
+	destroy_searchcriteria(head);
+
 	return return_status;
 }
 

@@ -22,3 +22,5 @@ typedef struct _searchcriterium_t {
 } searchcriterium_t;
 
 char* create_searchcriteria(searchcriterium_t** searchcriteria, const char* pattern, char esc_char);
+
+void destroy_searchcriteria(searchcriterium_t* searchcriteria);

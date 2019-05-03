@@ -442,7 +442,7 @@ char* create_searchcriteria(searchcriterium_t** searchcriteria, const char* patt
         handle_character(&state, *cursor);
 
         if (state.error_string) {
-            // GDKfree(*searchcriteria);
+            destroy_searchcriteria(*searchcriteria);
             return state.error_string;
         }
     }
@@ -450,12 +450,24 @@ char* create_searchcriteria(searchcriterium_t** searchcriteria, const char* patt
     state.finalize(&state);
 
     if (state.error_string) {
-        // GDKfree(*searchcriteria);
+        destroy_searchcriteria(*searchcriteria);
         return state.error_string;
     }
 
     return NULL;
 }
 
-// TODO: clean up function for searchcriteria string.
+void destroy_searchcriteria(searchcriterium_t* searchcriteria) {
+    searchcriterium_t* next;
+
+    do {
+        next = searchcriteria->next;
+
+        GDKfree(searchcriteria);
+
+        searchcriteria = next;
+
+    } while(next);
+}
+
 // TODO: null checks for malloc failuress
