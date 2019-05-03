@@ -130,4 +130,7 @@ with strings as (select '__%_bc' as pattern, 'bcäbc' as target)
 with strings as (select '\\_\\_\\_\\_' as pattern, 'xxxx' as target)
     select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
 
+with strings as (select '\\x' as pattern, 'xxxx' as target)
+    select pattern, target,  simplelikematch(pattern, target, 'de_DE') as matches from strings;
+
 ROLLBACK;

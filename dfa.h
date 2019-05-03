@@ -21,4 +21,4 @@ typedef struct _searchcriterium_t {
     struct _searchcriterium_t* next;
 } searchcriterium_t;
 
-searchcriterium_t* create_searchcriteria(const char* pattern, char esc_char);
+char* create_searchcriteria(searchcriterium_t** searchcriteria, const char* pattern, char esc_char);

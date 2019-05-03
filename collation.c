@@ -217,7 +217,9 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
 
-	head = create_searchcriteria(*pattern, '\\');
+	 if (return_status = create_searchcriteria(&head, *pattern, '\\')) {
+		 return return_status;
+	 }
 
 	size_t target_capacity = strlen(*target) + 1;
 	UChar u_target[target_capacity];

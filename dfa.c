@@ -82,7 +82,6 @@ static void set_initial_state(state_t* state, char esc_char) {
     state->handle_underscore        = initial_handle_underscore;
     state->handle_escape_character  = initial_handle_escape;
     state->handle_normal_character  = initial_handle_normal_character;
-    state->to_error                 = NULL;
     state->finalize                 = NULL;
 }
 
@@ -93,7 +92,6 @@ static void set_mc_wildcard_state(state_t* state) {
     state->handle_underscore        = mc_wildcard_handle_underscore;
     state->handle_escape_character  = mc_wildcard_handle_escape_character;
     state->handle_normal_character  = mc_wildcard_handle_normal_character;
-    state->to_error                 = NULL;
     state->finalize                 = wildcard_finalize;
 }
 
@@ -104,7 +102,6 @@ static void set_sc_wildcard_state(state_t* state) {
     state->handle_underscore        = sc_wildcard_handle_underscore;
     state->handle_escape_character  = sc_wildcard_handle_escape_character;
     state->handle_normal_character  = sc_wildcard_handle_normal_character;
-    state->to_error                 = NULL;
     state->finalize                 = wildcard_finalize;
 }
 
@@ -114,8 +111,7 @@ static void set_escape_state(state_t* state) {
     state->handle_percentage        = escape_handle_normal_character;
     state->handle_underscore        = escape_handle_normal_character;
     state->handle_escape_character  = escape_handle_normal_character;
-    state->handle_normal_character  = NULL;
-    state->to_error                 = escape_handle_error;
+    state->handle_normal_character  = escape_handle_error;
     state->finalize                 = escape_finalize;
 }
 
@@ -126,7 +122,6 @@ static void set_literal_state(state_t* state) {
     state->handle_underscore        = literal_handle_underscore;
     state->handle_escape_character  = literal_handle_escape_character;
     state->handle_normal_character  = literal_handle_normal_character;
-    state->to_error                 = NULL;
     state->finalize                 = literal_finalize;
 }
 
@@ -137,7 +132,6 @@ static void set_literal_state(state_t* state) {
     assert(state->handle_underscore == mc_wildcard_handle_underscore); \
     assert(state->handle_escape_character == mc_wildcard_handle_escape_character); \
     assert(state->handle_normal_character == mc_wildcard_handle_normal_character); \
-    assert(state->to_error == NULL); \
     assert(state->finalize == wildcard_finalize); \
 })
 
@@ -241,7 +235,6 @@ void mc_wildcard_handle_normal_character(state_t* state, const char character) {
     assert(state->handle_underscore == sc_wildcard_handle_underscore); \
     assert(state->handle_escape_character == sc_wildcard_handle_escape_character); \
     assert(state->handle_normal_character == sc_wildcard_handle_normal_character); \
-    assert(state->to_error == NULL); \
     assert(state->finalize == wildcard_finalize); \
 })
 
@@ -295,8 +288,7 @@ void wildcard_finalize(state_t* state) {
     assert(state->handle_percentage == escape_handle_normal_character); \
     assert(state->handle_underscore == escape_handle_normal_character); \
     assert(state->handle_escape_character == escape_handle_normal_character); \
-    assert(state->handle_normal_character == NULL); \
-    assert(state->to_error == escape_handle_error); \
+    assert(state->handle_normal_character == escape_handle_error); \
     assert(state->finalize == escape_finalize); \
 })
 
@@ -322,10 +314,12 @@ void escape_handle_error(state_t* state, const char character) {
     // TODO: think of how to insert character in error string.
     // character = *(char*) data;
 
-    char* error = "Non-escapable character.";
+    char* error = "Non-escapable character:";
     // TODO: Make sure there is an actual error message.
 
-    message_buffer = (char*) GDKmalloc(strlen(error) + 1);
+    message_buffer = (char*) GDKmalloc(strlen(error) + 5);
+
+    sprintf(message_buffer, "%s %s.", error, &character);
 
     // Setting the error_string in the state signals an exception of the parsing process.
     state->error_string = message_buffer;
@@ -349,7 +343,6 @@ void escape_finalize(state_t* state) {
     assert(state->handle_underscore == literal_handle_underscore); \
     assert(state->handle_escape_character == literal_handle_escape_character); \
     assert(state->handle_normal_character == literal_handle_normal_character); \
-    assert(state->to_error == NULL); \
     assert(state->finalize == literal_finalize); \
 })
 
@@ -441,20 +434,24 @@ static void handle_character(state_t* state, const char cursor) {
     }
 }
 
-searchcriterium_t* create_searchcriteria(const char* pattern, char esc_char) {
+char* create_searchcriteria(searchcriterium_t** searchcriteria, const char* pattern, char esc_char) {
     assert(strlen(pattern) > 0);
 
     state_t state;
 
     set_initial_state(&state, esc_char);
 
-    searchcriterium_t* searchcriteria = state.current; // head of linked list of search string objects.
+    *searchcriteria = state.current; // head of linked list of search string objects.
 
     for (const char* cursor = pattern; *cursor != '\0' && state.error_string == NULL; ++cursor) {
         handle_character(&state, *cursor);
     }
 
-    state.finalize(&state);
+    if (state.error_string) {
+        // GDKfree(*searchcriteria);
+        return state.error_string;
+    }
 
-    return searchcriteria;
+    state.finalize(&state);
+    return NULL;
 }
