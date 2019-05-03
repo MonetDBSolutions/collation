@@ -32,7 +32,7 @@
 extern __declspec(dllexport) char *UDFstrxfrm(blob **result, const char **input, const char **locale_id);
 extern __declspec(dllexport) char *UDFBATstrxfrm(bat *result, const bat *input, const bat * locale);
 extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
-extern __declspec(dllexport) char *UDFsimplelikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
+extern __declspec(dllexport) char *UDFsearch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 
 static char* first_search(UStringSearch** search, int offset, const char* pattern, const UChar* u_target, UCollator* col) {
 	UErrorCode status = U_ZERO_ERROR;
@@ -43,21 +43,21 @@ static char* first_search(UStringSearch** search, int offset, const char* patter
 	u_strFromUTF8Lenient(u_pattern, pattern_capacity, NULL, pattern, -1, &status);
 
 	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.simplelikematch", "Could not transform pattern string from utf-8 to utf-16.");
+		throw(MAL, "icu.collationlike", "Could not transform pattern string from utf-8 to utf-16.");
 	}
 
 	*search = usearch_openFromCollator(u_pattern, -1, u_target, -1, col, NULL, &status);
 
 	if (!U_SUCCESS(status)){
 		usearch_close(*search);
-		throw(MAL, "icu.simplelikematch", "Could not instantiate ICU string search.");
+		throw(MAL, "icu.collationlike", "Could not instantiate ICU string search.");
 	}
 
 	usearch_following(*search, offset, &status);
 
 	if (!U_SUCCESS(status)){
 		usearch_close(*search);
-		throw(MAL, "icu.simplelikematch", "ICU string search failed.");
+		throw(MAL, "icu.collationlike", "ICU string search failed.");
 	}
 
 	return MAL_SUCCEED;
@@ -69,13 +69,13 @@ static char* next_search(UStringSearch* search) {
 
 	if (!U_SUCCESS(status)){
 		usearch_close(search);
-		throw(MAL, "icu.simplelikematch", "ICU next string search failed.");
+		throw(MAL, "icu.collationlike", "ICU next string search failed.");
 	}
 
 	return MAL_SUCCEED;
 }
 
-static char * simplelikematch(bit* found, const char *pattern, const char *target, UCollator* coll) {
+static char * collationlike(bit* found, const char *pattern, const char *target, UCollator* coll) {
 	UErrorCode status = U_ZERO_ERROR;
 	UStringSearch* search;
 	char* return_status;
@@ -85,7 +85,7 @@ static char * simplelikematch(bit* found, const char *pattern, const char *targe
 	u_strFromUTF8Lenient(u_target, target_capacity, NULL, target, -1, &status);
 
 	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.simplelikematch", "Could not transform target string from utf-8 to utf-16.");
+		throw(MAL, "icu.collationlike", "Could not transform target string from utf-8 to utf-16.");
 	}
 
 	if (return_status = first_search(&search, 0, pattern, u_target, coll))
@@ -98,9 +98,8 @@ static char * simplelikematch(bit* found, const char *pattern, const char *targe
 	return MAL_SUCCEED;
 }
 
-// TODO: Make this UDF available as simple search or something.
 char *
-UDFsimplelikematch(bit* result, const char** pattern, const char** target, const char** locale_id) {
+UDFsearch(bit* result, const char** pattern, const char** target, const char** locale_id) {
 	UErrorCode status = U_ZERO_ERROR;
 	UCollator* coll;
 	UStringSearch* search;
@@ -119,12 +118,12 @@ UDFsimplelikematch(bit* result, const char** pattern, const char** target, const
 
 	if (!U_SUCCESS(status)){
 		ucol_close(coll);
-		throw(MAL, "icu.simplelikematch", "Could not create ICU collator.");
+		throw(MAL, "icu.collationlike", "Could not create ICU collator.");
 	}
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
 
-	return_status = simplelikematch(result, *pattern, *target, coll);
+	return_status = collationlike(result, *pattern, *target, coll);
 
 	ucol_close(coll);
 
@@ -212,7 +211,7 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 
 	if (!U_SUCCESS(status)) {
 		ucol_close(coll);
-		throw(MAL, "icu.simplelikematch", "Could not create ICU collator.");
+		throw(MAL, "icu.collationlike", "Could not create ICU collator.");
 	}
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
@@ -227,7 +226,7 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 	u_strFromUTF8Lenient(u_target, target_capacity, &nunits, *target, -1, &status);
 
 	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.simplelikematch", "Could not transform target string from utf-8 to utf-16.");
+		throw(MAL, "icu.collationlike", "Could not transform target string from utf-8 to utf-16.");
 	}
 
 	return_status = likematch_recursive(result, head, 0, u_target, nunits, coll);
