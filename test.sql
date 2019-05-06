@@ -146,3 +146,14 @@ with strings as (select 'abc\\x' as pattern, 'xxxx' as target)
 
 with strings as (select '\\' as pattern, 'xxxx' as target)
     select pattern, target,  collationlike(pattern, target, 'de_DE') as matches from strings;
+
+
+with strings as (select '%A%' as pattern, 'bcäbc' as target)
+    select pattern, target,  collationlike(pattern, target, 'en_US') as matches from strings;
+with strings as (select '%A%' as pattern, 'bcäbc' as target)
+    select pattern, target,  collationlike(pattern, target, 'en_US_POSIX') as matches from strings;
+
+with strings as (select 'FUSSBALL' as pattern, 'fußball' as target)
+    select pattern, target,  collationlike(pattern, target, 'en_US') as matches from strings;
+with strings as (select 'FUSSBALL' as pattern, 'fußball' as target)
+    select pattern, target,  collationlike(pattern, target, 'en_US_POSIX') as matches from strings;
