@@ -17,7 +17,7 @@ typedef enum state_type {
 } state_type_t;
 
 struct state_t {
-    state_type_t type;
+    state_type_t type; // TODO: Remove this redundant state enum.
     char esc_char;
     searchcriterium_t* current;
     char* error_string;
@@ -61,7 +61,7 @@ const size_t INIT_BUFFER_SIZE = 128;
 static searchcriterium_t* create_searchcriterium() {
     searchcriterium_t* first;
 
-    first = (searchcriterium_t*) GDKmalloc(sizeof(searchcriterium_t));
+    first = (searchcriterium_t*) GDKmalloc(sizeof(searchcriterium_t)); // TODO: Check for malloc failure?
     first->start = 0;
     first->search_string.data = (char*) GDKmalloc(INIT_BUFFER_SIZE * sizeof(char));
     first->search_string.capacity = INIT_BUFFER_SIZE;
@@ -469,5 +469,3 @@ void destroy_searchcriteria(searchcriterium_t* searchcriteria) {
 
     } while(next);
 }
-
-// TODO: null checks for malloc failuress
