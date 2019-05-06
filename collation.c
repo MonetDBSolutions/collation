@@ -257,7 +257,15 @@ UDFlocales(bat *result) {
 
 	locales = ucol_openAvailableLocales(&status);
 
+	if (!U_SUCCESS(status)){
+		throw(MAL, "icu.get_locales", "Could open handle to available locales.");
+	}
+
 	nlocales = uenum_count(locales, &status);
+
+	if (!U_SUCCESS(status)){
+		throw(MAL, "icu.get_locales", "Could not count available locales.");
+	}
 
 	result_bat = COLnew(0, TYPE_str, nlocales, TRANSIENT);
 
@@ -266,6 +274,10 @@ UDFlocales(bat *result) {
 	dest = GDKmalloc(max_len);
 
 	while (locale = uenum_next(locales, &len, &status)) {
+
+		if (!U_SUCCESS(status)){
+			goto bailout;
+		}
 
 		/* make sure dest is large enough */
 		if (len >= max_len) {
@@ -302,7 +314,7 @@ UDFlocales(bat *result) {
 	 * up the mess we've created and throw an exception */
 	GDKfree(dest);
 	BBPunfix(result_bat->batCacheid);
-	throw(MAL, "collation.get_locales", MAL_MALLOC_FAIL);
+	throw(MAL, "icu.get_locales", MAL_MALLOC_FAIL);
 }
 
 const size_t DEFAULT_MAX_STRING_KEY_SIZE = 128;
