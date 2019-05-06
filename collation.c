@@ -244,6 +244,10 @@ do_strxfrm(char *dest, const char *source, size_t len, locale_t locale) {
     return strxfrm_l(dest, source, len, locale)  + /* for null terminator*/ 1;
 }
 
+// TODO: write bulk version for UDFlikematch.
+// TODO: rewrite UDFstrxfrm functions based on ICU.
+// TODO: write UDFstrxfrm functions based on ICU.
+
 char *
 UDFstrxfrm(blob **result, const char **input, const char **locale_id)
 {
