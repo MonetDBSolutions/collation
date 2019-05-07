@@ -11,12 +11,14 @@ insert into foo values
     ('Housse'),
     ('House'),
     ('Fußball'),
-    ('_VERY_LONG_STRING_ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß');
+    ('_VERY_LONG_STRING_ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß'),
+    (null);
 
-explain select get_sort_key('asdsad', 'de_DE.utf8');
-select get_sort_key('asdsad', 'de_DE.utf8');
+explain select get_sort_key('asdsad', 'en_US');
 
-explain select * from foo order by get_sort_key(s, 'en_US');
+explain select get_sort_key(s, 'en_US') from foo;
+select get_sort_key(s, 'en_US') from foo;
+
 select * from foo order by get_sort_key(s, 'en_US');
 
 select * from foo order by s;
@@ -25,7 +27,6 @@ select * from foo where s like '%Mu%';
 select * from foo where s like '%Mü%';
 select * from foo where s ilike '%SS%';
 select * from foo where s ilike '%ß%';
-
 
 
 with strings as (select 'c%de' as pattern, 'cbde' as target)
@@ -138,6 +139,27 @@ with strings as (select 'Abd' as pattern, 'bcäbc' as target)
 
 with strings as (select 'mu%' as pattern)
     select strings.pattern, foo.s, collationlike(strings.pattern, foo.s, 'en_US') as match from strings, foo;
+
+ROLLBACK;
+
+select get_sort_key('asdsad', null);
+
+START TRANSACTION;
+
+create table foo (s STRING);
+
+insert into foo values
+    ('Mvller'),
+    ('Müller'),
+    ('müller'),
+    ('Houße'),
+    ('Muller'),
+    ('Housse'),
+    ('House'),
+    ('Fußball'),
+    ('_VERY_LONG_STRING_ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß');
+
+select get_sort_key(s, null) from foo;
 
 ROLLBACK;
 

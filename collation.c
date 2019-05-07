@@ -29,12 +29,14 @@
 #define __declspec(x)	/* nothing */
 #endif
 
-extern __declspec(dllexport) char *UDFget_sort_key(blob **result, const char **input, const char **locale_id);
-extern __declspec(dllexport) char *UDFBATget_sort_key(bat *result, const bat *input, const bat * locale);
+extern __declspec(dllexport) char *UDFget_sort_key(blob** result, const char **input, const char **locale_id);
+extern __declspec(dllexport) char *UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str);
 extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 extern __declspec(dllexport) char *UDFBATlikematch(bat* result, const char** pattern, const bat *target, const char **locale_str);
 extern __declspec(dllexport) char *UDFsearch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 extern __declspec(dllexport) char *UDFlocales(bat *result);
+
+static blob nullval = {~(size_t) 0};
 
 static char* first_search(UStringSearch** search, int offset, const char* pattern, const UChar* u_target, UCollator* col) {
 	UErrorCode status = U_ZERO_ERROR;
@@ -379,18 +381,24 @@ do_get_sort_key(char* dest, const UChar* source, size_t len, const UCollator* co
 }
 
 // TODO: Make bulk version for UDFlikematch working.
-// TODO: Make bulk version for UDFget_sort_key working.
 // TODO: Clean up code base a bit.
 
 char *
-UDFget_sort_key(blob **result, const char **input, const char **locale_id)
+UDFget_sort_key(blob** result, const char **input, const char **locale_id)
 {
 	UErrorCode status = U_ZERO_ERROR;
 	blob* dest;
 	size_t len, nbytes;
 	UCollator* coll;
 
-	// TODO check for null values
+	if (GDK_STRNIL(*input)) { // nil input implies nil result.
+		*result = (blob*) GDKmalloc(sizeof(nullval));
+		**result = nullval;
+		return MAL_SUCCEED;
+	}
+
+	if (GDK_STRNIL(*locale_id))
+		throw(MAL, "icu.get_locales", "locale identifier cannot be null.");
 
 	coll = ucol_open(*locale_id, &status);
 
@@ -423,7 +431,7 @@ UDFget_sort_key(blob **result, const char **input, const char **locale_id)
 }
 
 char *
-UDFBATget_sort_key_cst(bat *result, const bat *input, const char **locale_str)
+UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 {
 	UErrorCode status = U_ZERO_ERROR;
 	BAT *input_bat, *result_bat;
@@ -434,7 +442,8 @@ UDFBATget_sort_key_cst(bat *result, const bat *input, const char **locale_str)
 	size_t len, max_len, nbytes;
 	UCollator* coll;
 
-	// ADD null checks
+	if (GDK_STRNIL(*locale_str))
+		throw(MAL, "icu.get_locales", "locale identifier cannot be null.");
 
 	coll = ucol_open(*locale_str, &status);
 
@@ -472,6 +481,21 @@ UDFBATget_sort_key_cst(bat *result, const bat *input, const char **locale_str)
 	bi = bat_iterator(input_bat);
 	BATloop(input_bat, p, q) {
 		source = (const char *) BUNtail(bi, p);
+
+		if (GDK_STRNIL(source)) {
+
+			dest = GDKmalloc(sizeof(nullval));
+			*dest = nullval;
+
+			if (BUNappend(result_bat, dest, false) != GDK_SUCCEED) {
+				/* BUNappend can fail since it may have to
+				* grow memory areas--especially true for
+				* string BATs */
+				goto bailout;
+			}
+
+			break;
+		}
 
 		size_t u_source_capacity = strlen(source) + 1;
 		UChar u_source[u_source_capacity];
@@ -525,22 +549,24 @@ UDFBATget_sort_key_cst(bat *result, const bat *input, const char **locale_str)
 	throw(MAL, "collation.get_sort_key", MAL_MALLOC_FAIL);
 }
 
+/*
+// START OF UGLY hack to get the bulk version recognized
 char *
-UDFBATget_sort_key(bat *result, const bat *input, const bat * locale_id)
+UDFBATget_sort_key_hack(bat *result, const bat *input, const bat * locale_id)
 {
 	BAT *locale_bat;
 	BATiter bi;
 	const char *locale_str;
 	char *res;
 
-	/*START OF UGLY hack to get the bulk version recognized*/
 	locale_bat = BATdescriptor(*locale_id);
 	assert(locale_bat->ttype == TYPE_str);
 	bi = bat_iterator(locale_bat);
 	locale_str = (const char *) BUNtail(bi, 0); 
-	/*END OF UGLY hack to get the bulk version recognized*/
 
-	res =  UDFBATget_sort_key_cst(result, input, &locale_str);
+	res =  UDFBATget_sort_key(result, input, &locale_str);
 	BBPunfix(locale_bat->batCacheid);
 	return res;
 }
+// END OF UGLY hack to get the bulk version recognized
+ */

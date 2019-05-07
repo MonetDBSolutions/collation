@@ -22,10 +22,5 @@ comment "Check if input matches with pattern.";
 
 module batcollation;
 command get_sort_key(val:bat[:str], locale:str):bat[:blob]
-address UDFBATget_sort_key_cst
-comment "Transform a utf8 string into a binary collation respecting sortkey.";
-
-module batcollation;
-command get_sort_key(val:bat[:str], locale:bat[:str]):bat[:blob]
 address UDFBATget_sort_key
 comment "Transform a utf8 string into a binary collation respecting sortkey.";
