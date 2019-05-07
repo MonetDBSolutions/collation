@@ -275,6 +275,8 @@ UDFBATlikematch(bat* result, const char** pattern, const bat *target, const char
 	BATloop(target_bat, p, q) {
 		source = (const char *) BUNtail(bi, p);
 
+		// TODO check for nulls.
+
 		if (return_status = likematch(dest, pattern, &source, coll)) {
 			goto bailout;
 		}
@@ -378,6 +380,7 @@ do_get_sort_key(char* dest, const UChar* source, size_t len, const UCollator* co
 
 // TODO: Make bulk version for UDFlikematch working.
 // TODO: Make bulk version for UDFget_sort_key working.
+// TODO: Clean up code base a bit.
 
 char *
 UDFget_sort_key(blob **result, const char **input, const char **locale_id)
