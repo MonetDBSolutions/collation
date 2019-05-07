@@ -1,6 +1,6 @@
 module collation;
-command strxfrm(val:str, locale:str):blob
-address UDFstrxfrm
+command get_sort_key(val:str, locale:str):blob
+address UDFget_sort_key
 comment "Transform a utf8 string into a binary collation respecting sortkey.";
 
 command collationlike(input:str, pattern:str, locale:str):bit
@@ -16,11 +16,16 @@ address UDFlocales
 comment "List available locales from which a collator can be derived.";
 
 module batcollation;
-command strxfrm(val:bat[:str], locale:str):bat[:blob]
-address UDFBATstrxfrm_cst
+command collationlike(input:bat[:str], pattern:str, locale:str):bat[:bit]
+address UDFBATlikematch
+comment "Check if input matches with pattern.";
+
+module batcollation;
+command get_sort_key(val:bat[:str], locale:str):bat[:blob]
+address UDFBATget_sort_key_cst
 comment "Transform a utf8 string into a binary collation respecting sortkey.";
 
 module batcollation;
-command strxfrm(val:bat[:str], locale:bat[:str]):bat[:blob]
-address UDFBATstrxfrm
+command get_sort_key(val:bat[:str], locale:bat[:str]):bat[:blob]
+address UDFBATget_sort_key
 comment "Transform a utf8 string into a binary collation respecting sortkey.";

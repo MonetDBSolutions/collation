@@ -13,11 +13,11 @@ insert into foo values
     ('Fußball'),
     ('_VERY_LONG_STRING_ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß');
 
-explain select strxfrm('asdsad', 'de_DE.utf8');
-select strxfrm('asdsad', 'de_DE.utf8');
+explain select get_sort_key('asdsad', 'de_DE.utf8');
+select get_sort_key('asdsad', 'de_DE.utf8');
 
-explain select * from foo order by strxfrm(s, 'de_DE.utf8');
-select * from foo order by strxfrm(s, 'de_DE.utf8');
+explain select * from foo order by get_sort_key(s, 'en_US');
+select * from foo order by get_sort_key(s, 'en_US');
 
 select * from foo order by s;
 
@@ -136,6 +136,9 @@ with strings as (select 'Ab' as pattern, 'bcäbc' as target)
 with strings as (select 'Abd' as pattern, 'bcäbc' as target)
     select pattern, target,  search(pattern, target, 'de_DE') as matches from strings;
 
+with strings as (select 'mu%' as pattern)
+    select strings.pattern, foo.s, collationlike(strings.pattern, foo.s, 'en_US') as match from strings, foo;
+
 ROLLBACK;
 
 with strings as (select '\\x' as pattern, 'xxxx' as target)
@@ -146,7 +149,6 @@ with strings as (select 'abc\\x' as pattern, 'xxxx' as target)
 
 with strings as (select '\\' as pattern, 'xxxx' as target)
     select pattern, target,  collationlike(pattern, target, 'de_DE') as matches from strings;
-
 
 with strings as (select '%A%' as pattern, 'bcäbc' as target)
     select pattern, target,  collationlike(pattern, target, 'en_US') as matches from strings;

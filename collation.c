@@ -29,9 +29,10 @@
 #define __declspec(x)	/* nothing */
 #endif
 
-extern __declspec(dllexport) char *UDFstrxfrm(blob **result, const char **input, const char **locale_id);
-extern __declspec(dllexport) char *UDFBATstrxfrm(bat *result, const bat *input, const bat * locale);
+extern __declspec(dllexport) char *UDFget_sort_key(blob **result, const char **input, const char **locale_id);
+extern __declspec(dllexport) char *UDFBATget_sort_key(bat *result, const bat *input, const bat * locale);
 extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
+extern __declspec(dllexport) char *UDFBATlikematch(bat* result, const char** pattern, const bat *target, const char **locale_str);
 extern __declspec(dllexport) char *UDFsearch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 extern __declspec(dllexport) char *UDFlocales(bat *result);
 
@@ -189,10 +190,8 @@ static char* likematch_recursive(bit* found, searchcriterium_t* current, int off
 	return MAL_SUCCEED;
 }
 
-char *
-UDFlikematch(bit* result, const char** pattern, const char** target, const char** locale_id) {
+static char * likematch(bit* result, const char** pattern, const char** target, UCollator* coll) {
 	UErrorCode status = U_ZERO_ERROR;
-	UCollator* coll;
 	UStringSearch* search;
 	char* return_status;
 	searchcriterium_t* head;
@@ -207,15 +206,6 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 
 	if (!strlen(*pattern)) // empty pattern implies false match
 		return MAL_SUCCEED;
-
-	coll = ucol_open(*locale_id, &status);
-
-	if (!U_SUCCESS(status)) {
-		ucol_close(coll);
-		throw(MAL, "icu.collationlike", "Could not create ICU collator.");
-	}
-
-	ucol_setStrength(coll, UCOL_PRIMARY);
 
 	 if (return_status = create_searchcriteria(&head, *pattern, '\\')) {
 		 return return_status;
@@ -235,6 +225,68 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 	destroy_searchcriteria(head);
 
 	return return_status;
+}
+
+char *
+UDFlikematch(bit* result, const char** pattern, const char** target, const char** locale_id) {
+	UErrorCode status = U_ZERO_ERROR;
+	char* return_status;
+	UCollator* coll;
+
+	coll = ucol_open(*locale_id, &status);
+
+	if (!U_SUCCESS(status)) {
+		ucol_close(coll);
+		throw(MAL, "icu.collationlike", "Could not create ICU collator.");
+	}
+
+	ucol_setStrength(coll, UCOL_PRIMARY);
+
+	return likematch(result, pattern, target, coll);
+}
+
+char *
+UDFBATlikematch(bat* result, const char** pattern, const bat *target, const char **locale_str) {
+	UErrorCode status = U_ZERO_ERROR;
+	BAT *target_bat, *result_bat;
+	BATiter bi;
+	bit *dest;
+	BUN p, q;
+	const char *source;
+	UCollator* coll;
+	char* return_status;
+
+	coll = ucol_open(*locale_str, &status);
+
+	if (!U_SUCCESS(status)) {
+		ucol_close(coll);
+		throw(MAL, "icu.collationlike", "Could not create ICU collator.");
+	}
+
+	ucol_setStrength(coll, UCOL_PRIMARY);
+
+	target_bat = BATdescriptor(*target);
+
+	/* allocate result BAT */
+	result_bat = COLnew(target_bat->hseqbase, TYPE_bit, BATcount(target_bat), TRANSIENT);
+	/* loop through BAT input_bat; p is index of the entry we're working
+	 * on, q is used internally by BATloop to do the iterating */
+	bi = bat_iterator(target_bat);
+	BATloop(target_bat, p, q) {
+		source = (const char *) BUNtail(bi, p);
+
+		if (return_status = likematch(dest, pattern, &source, coll)) {
+			goto bailout;
+		}
+	}
+
+	return MAL_SUCCEED;
+
+  bailout:
+	/* we only get here in the case of an allocation error; clean
+	 * up the mess we've created and throw an exception */
+	BBPunfix(result_bat->batCacheid);
+	throw(MAL, "icu.get_locales", MAL_MALLOC_FAIL);
 }
 
 const size_t DEFAULT_MAX_STRING_LOCALE_ID_SIZE = 64;
@@ -320,61 +372,85 @@ UDFlocales(bat *result) {
 const size_t DEFAULT_MAX_STRING_KEY_SIZE = 128;
 
 static size_t
-do_strxfrm(char *dest, const char *source, size_t len, locale_t locale) {
-    
-    return strxfrm_l(dest, source, len, locale)  + /* for null terminator*/ 1;
+do_get_sort_key(char* dest, const UChar* source, size_t len, const UCollator* coll) {
+    return ucol_getSortKey(coll, source, -1, dest, len);
 }
 
-// TODO: write bulk version for UDFlikematch.
-// TODO: rewrite UDFstrxfrm functions based on ICU.
-// TODO: write UDFstrxfrm functions based on ICU.
+// TODO: Make bulk version for UDFlikematch working.
+// TODO: Make bulk version for UDFget_sort_key working.
 
 char *
-UDFstrxfrm(blob **result, const char **input, const char **locale_id)
+UDFget_sort_key(blob **result, const char **input, const char **locale_id)
 {
+	UErrorCode status = U_ZERO_ERROR;
 	blob* dest;
 	size_t len, nbytes;
-	locale_t locale;
+	UCollator* coll;
 
-	locale = newlocale(LC_COLLATE_MASK, *locale_id,( locale_t)0);
+	// TODO check for null values
 
-	len = do_strxfrm(NULL, *input, 0, locale);
+	coll = ucol_open(*locale_id, &status);
+
+	if (!U_SUCCESS(status)) {
+		ucol_close(coll);
+		throw(MAL, "icu.get_sort_key", "Could not create ICU collator.");
+	}
+
+	ucol_setStrength(coll, UCOL_PRIMARY);
+
+	size_t u_input_capacity = strlen(*input) + 1;
+	UChar u_input[u_input_capacity];
+	u_strFromUTF8Lenient(u_input, u_input_capacity, NULL, *input, -1, &status);
+
+	if (!U_SUCCESS(status)){
+		throw(MAL, "icu.get_sort_key", "Could not transform target string from utf-8 to utf-16.");
+	}
+
+	len = do_get_sort_key(NULL, u_input, 0, coll);
 	nbytes = blobsize(len);
 	dest = *result = GDKmalloc(nbytes);
 	if (dest == NULL)
-		throw(MAL, "collation.strxfrm", MAL_MALLOC_FAIL);
+		throw(MAL, "collation.get_sort_key", MAL_MALLOC_FAIL);
 
 	dest->nitems =len;
 
-	do_strxfrm(dest->data, *input, len, locale);
+	do_get_sort_key(dest->data, u_input, len, coll);
 
 	return MAL_SUCCEED;
 }
 
 char *
-UDFBATstrxfrm_cst(bat *result, const bat *input, const char **locale_str)
+UDFBATget_sort_key_cst(bat *result, const bat *input, const char **locale_str)
 {
+	UErrorCode status = U_ZERO_ERROR;
 	BAT *input_bat, *result_bat;
 	BATiter bi;
 	blob *dest;
 	BUN p, q;
 	const char *source;
 	size_t len, max_len, nbytes;
-	locale_t locale;
+	UCollator* coll;
 
-	locale = newlocale(LC_COLLATE_MASK, *locale_str, (locale_t)0);
+	// ADD null checks
+
+	coll = ucol_open(*locale_str, &status);
+
+	if (!U_SUCCESS(status)) {
+		ucol_close(coll);
+		throw(MAL, "icu.collationlike", "Could not create ICU collator.");
+	}
 	/* allocate temporary space for transformed strings; we grow this
 	 * if we need more */
 	max_len = DEFAULT_MAX_STRING_KEY_SIZE;
 	nbytes = blobsize(max_len);
 	dest = GDKmalloc(nbytes);
 	if (dest == NULL)
-		throw(MAL, "collation.strxfrm", MAL_MALLOC_FAIL);
+		throw(MAL, "collation.get_sort_key", MAL_MALLOC_FAIL);
 
 	input_bat = BATdescriptor(*input);
 	if (input_bat == NULL) {
 		GDKfree(dest);
-		throw(MAL, "collation.strxfrm", RUNTIME_OBJECT_MISSING);
+		throw(MAL, "collation.get_sort_key", RUNTIME_OBJECT_MISSING);
 	}
 
 	/* we should only get called for string BATs */
@@ -385,7 +461,7 @@ UDFBATstrxfrm_cst(bat *result, const bat *input, const char **locale_str)
 	if (result_bat == NULL) {
 		BBPunfix(input_bat->batCacheid);
 		GDKfree(dest);
-		throw(MAL, "collation.strxfrm", MAL_MALLOC_FAIL);
+		throw(MAL, "collation.get_sort_key", MAL_MALLOC_FAIL);
 	}
 
 	/* loop through BAT input_bat; p is index of the entry we're working
@@ -394,7 +470,15 @@ UDFBATstrxfrm_cst(bat *result, const bat *input, const char **locale_str)
 	BATloop(input_bat, p, q) {
 		source = (const char *) BUNtail(bi, p);
 
-		size_t len = do_strxfrm(dest->data, source, max_len, locale);
+		size_t u_source_capacity = strlen(source) + 1;
+		UChar u_source[u_source_capacity];
+		u_strFromUTF8Lenient(u_source, u_source_capacity, NULL, source, -1, &status);
+
+		if (!U_SUCCESS(status)){
+			throw(MAL, "icu.get_sort_key", "Could not transform target string from utf-8 to utf-16.");
+		}
+
+		size_t len = do_get_sort_key(dest->data, u_source, max_len, coll);
 
 		/* make sure dest is large enough */
 		if (len >= max_len) {
@@ -410,7 +494,7 @@ UDFBATstrxfrm_cst(bat *result, const bat *input, const char **locale_str)
 			}
 			dest = ndest;
 
-			do_strxfrm(dest->data, source, max_len, locale);
+			do_get_sort_key(dest->data, u_source, max_len, coll);
 		}
 
 		dest->nitems = len;
@@ -435,11 +519,11 @@ UDFBATstrxfrm_cst(bat *result, const bat *input, const char **locale_str)
 	GDKfree(dest);
 	BBPunfix(input_bat->batCacheid);
 	BBPunfix(result_bat->batCacheid);
-	throw(MAL, "collation.strxfrm", MAL_MALLOC_FAIL);
+	throw(MAL, "collation.get_sort_key", MAL_MALLOC_FAIL);
 }
 
 char *
-UDFBATstrxfrm(bat *result, const bat *input, const bat * locale_id)
+UDFBATget_sort_key(bat *result, const bat *input, const bat * locale_id)
 {
 	BAT *locale_bat;
 	BATiter bi;
@@ -453,7 +537,7 @@ UDFBATstrxfrm(bat *result, const bat *input, const bat * locale_id)
 	locale_str = (const char *) BUNtail(bi, 0); 
 	/*END OF UGLY hack to get the bulk version recognized*/
 
-	res =  UDFBATstrxfrm_cst(result, input, &locale_str); 
+	res =  UDFBATget_sort_key_cst(result, input, &locale_str);
 	BBPunfix(locale_bat->batCacheid);
 	return res;
 }
