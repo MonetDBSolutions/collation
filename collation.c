@@ -380,6 +380,8 @@ do_get_sort_key(char* dest, const UChar* source, size_t len, const UCollator* co
     return ucol_getSortKey(coll, source, -1, dest, len);
 }
 
+// check GDKMalloc's
+// TODO: Create hardcoded en_US based get_sort_key and likematch.
 // TODO: Make bulk version for UDFlikematch working.
 // TODO: Clean up code base a bit.
 
