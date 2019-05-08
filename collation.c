@@ -29,6 +29,13 @@
 #define __declspec(x)	/* nothing */
 #endif
 
+// TODO: Add test for UDFlocales.
+// TODO: Check if bulk versions are called on april branch.
+// TODO: empty pattern should be allowed to match.
+// TODO: turn collationlike in a true filter function, i.e. implement collationlikeselect and collationlikejoin.
+// TODO: Clean up code base a bit.
+// TODO: Create hardcoded en_US based get_sort_key and likematch.
+
 extern __declspec(dllexport) char *UDFget_sort_key(blob** result, const char **input, const char **locale_id);
 extern __declspec(dllexport) char *UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str);
 extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **u_target, const char **pattern, const char** locale_id);
@@ -395,12 +402,6 @@ static size_t
 do_get_sort_key(char* dest, const UChar* source, size_t len, const UCollator* coll) {
     return ucol_getSortKey(coll, source, -1, dest, len);
 }
-
-// TODO: empty pattern should be allowed to match.
-// TODO: Create hardcoded en_US based get_sort_key and likematch.
-// TODO: Add test for UDFlocales.
-// TODO: turn collationlike in a true filter function, i.e. implement collationlikeselect and collationlikejoin.
-// TODO: Clean up code base a bit.
 
 char *
 UDFget_sort_key(blob** result, const char **input, const char **locale_id)
