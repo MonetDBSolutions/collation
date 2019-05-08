@@ -33,7 +33,6 @@ extern __declspec(dllexport) char *UDFget_sort_key(blob** result, const char **i
 extern __declspec(dllexport) char *UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str);
 extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **u_target, const char **pattern, const char** locale_id);
 extern __declspec(dllexport) char *UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char **locale_str);
-extern __declspec(dllexport) char *UDFsearch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 extern __declspec(dllexport) char *UDFlocales(bat *result);
 
 static blob nullval = {~(size_t) 0};
@@ -100,38 +99,6 @@ static char * collationlike(bit* found, const char *pattern, const char *target,
 	usearch_close(search);
 
 	return MAL_SUCCEED;
-}
-
-char *
-UDFsearch(bit* result, const char** pattern, const char** target, const char** locale_id) {
-	UErrorCode status = U_ZERO_ERROR;
-	UCollator* coll;
-	UStringSearch* search;
-	char* return_status;
-
-	if (pattern == NULL) // NULL pattern implies false match
-		return MAL_SUCCEED;
-
-	if (target == NULL) // NULL target implies false match
-		return MAL_SUCCEED;
-
-	if (!strlen(*pattern)) // empty pattern implies false match
-		return MAL_SUCCEED;
-
-	coll = ucol_open(*locale_id, &status);
-
-	if (!U_SUCCESS(status)){
-		ucol_close(coll);
-		throw(MAL, "icu.collationlike", "Could not create ICU collator.");
-	}
-
-	ucol_setStrength(coll, UCOL_PRIMARY);
-
-	return_status = collationlike(result, *pattern, *target, coll);
-
-	ucol_close(coll);
-
-	return return_status;
 }
 
 static char* likematch_recursive(bit* found, searchcriterium_t* current, int offset, const UChar* target, const int nunits, UCollator* coll) {

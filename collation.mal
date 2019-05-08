@@ -7,10 +7,6 @@ command collationlike(input:str, pattern:str, locale:str):bit
 address UDFlikematch
 comment "Check if input matches with pattern.";
 
-command search(input:str, pattern:str, locale:str):bit
-address UDFsearch
-comment "Tries to find pattern as a substring in input.";
-
 command get_locales():bat[:str]
 address UDFlocales
 comment "List available locales from which a collator can be derived.";

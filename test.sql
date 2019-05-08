@@ -131,12 +131,6 @@ with strings as (select '__%_bc' as pattern, 'bcäbc' as target)
 with strings as (select '\\_\\_\\_\\_' as pattern, 'xxxx' as target)
     select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
 
-with strings as (select 'Ab' as pattern, 'bcäbc' as target)
-    select target, pattern,  search(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select 'Abd' as pattern, 'bcäbc' as target)
-    select target, pattern,  search(target, pattern, 'de_DE') as matches from strings;
-
 with strings as (select 'mu%' as pattern)
     select strings.pattern, foo.s, collationlike(strings.pattern, foo.s, 'en_US') as match from strings, foo;
 
