@@ -46,21 +46,21 @@ static char* first_search(UStringSearch** search, int offset, const char* patter
 	u_strFromUTF8Lenient(u_pattern, pattern_capacity, NULL, pattern, -1, &status);
 
 	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.collationlike", "Could not transform pattern string from utf-8 to utf-16.");
+		throw(MAL, "collation.collationlike", "Could not transform pattern string from utf-8 to utf-16.");
 	}
 
 	*search = usearch_openFromCollator(u_pattern, -1, u_target, -1, col, NULL, &status);
 
 	if (!U_SUCCESS(status)){
 		usearch_close(*search);
-		throw(MAL, "icu.collationlike", "Could not instantiate ICU string search.");
+		throw(MAL, "collation.collationlike", "Could not instantiate ICU string search.");
 	}
 
 	usearch_following(*search, offset, &status);
 
 	if (!U_SUCCESS(status)){
 		usearch_close(*search);
-		throw(MAL, "icu.collationlike", "ICU string search failed.");
+		throw(MAL, "collation.collationlike", "ICU string search failed.");
 	}
 
 	return MAL_SUCCEED;
@@ -72,7 +72,7 @@ static char* next_search(UStringSearch* search) {
 
 	if (!U_SUCCESS(status)){
 		usearch_close(search);
-		throw(MAL, "icu.collationlike", "ICU next string search failed.");
+		throw(MAL, "collation.collationlike", "ICU next string search failed.");
 	}
 
 	return MAL_SUCCEED;
@@ -88,7 +88,7 @@ static char * collationlike(bit* found, const char *pattern, const char *target,
 	u_strFromUTF8Lenient(u_target, target_capacity, NULL, target, -1, &status);
 
 	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.collationlike", "Could not transform target string from utf-8 to utf-16.");
+		throw(MAL, "collation.collationlike", "Could not transform target string from utf-8 to utf-16.");
 	}
 
 	if (return_status = first_search(&search, 0, pattern, u_target, coll))
@@ -175,7 +175,7 @@ static char * likematch(bit* result, searchcriterium_t* head, const char** targe
 	u_strFromUTF8Lenient(u_target, target_capacity, &nunits, *target, -1, &status);
 
 	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.collationlike", "Could not transform target string from utf-8 to utf-16.");
+		throw(MAL, "collation.collationlike", "Could not transform target string from utf-8 to utf-16.");
 	}
 
 	return_status = likematch_recursive(result, head, 0, u_target, nunits, coll);
@@ -203,7 +203,7 @@ UDFlikematch(bit* result, const char** target, const char** pattern, const char*
 
 	if (!U_SUCCESS(status)) {
 		ucol_close(coll);
-		throw(MAL, "icu.collationlike", "Could not create ICU collator.");
+		throw(MAL, "collation.collationlike", "Could not create ICU collator.");
 	}
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
@@ -231,7 +231,7 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 
 	if (!U_SUCCESS(status)) {
 		ucol_close(coll);
-		throw(MAL, "icu.collationlike", "Could not create ICU collator.");
+		throw(MAL, "collation.collationlike", "Could not create ICU collator.");
 	}
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
@@ -303,7 +303,7 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 	 * up the mess we've created and throw an exception */
 	destroy_searchcriteria(head);
 	BBPunfix(result_bat->batCacheid);
-	throw(MAL, "icu.get_locales", MAL_MALLOC_FAIL);
+	throw(MAL, "collation.get_locales", MAL_MALLOC_FAIL);
 }
 
 const size_t DEFAULT_MAX_STRING_LOCALE_ID_SIZE = 64;
@@ -327,13 +327,13 @@ UDFlocales(bat *result) {
 	locales = ucol_openAvailableLocales(&status);
 
 	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.get_locales", "Could open handle to available locales.");
+		throw(MAL, "collation.get_locales", "Could open handle to available locales.");
 	}
 
 	nlocales = uenum_count(locales, &status);
 
 	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.get_locales", "Could not count available locales.");
+		throw(MAL, "collation.get_locales", "Could not count available locales.");
 	}
 
 	result_bat = COLnew(0, TYPE_str, nlocales, TRANSIENT);
@@ -386,7 +386,7 @@ UDFlocales(bat *result) {
 	 * up the mess we've created and throw an exception */
 	GDKfree(dest);
 	BBPunfix(result_bat->batCacheid);
-	throw(MAL, "icu.get_locales", MAL_MALLOC_FAIL);
+	throw(MAL, "collation.get_locales", MAL_MALLOC_FAIL);
 }
 
 const size_t DEFAULT_MAX_STRING_KEY_SIZE = 128;
@@ -396,7 +396,6 @@ do_get_sort_key(char* dest, const UChar* source, size_t len, const UCollator* co
     return ucol_getSortKey(coll, source, -1, dest, len);
 }
 
-// TODO: check error namespaces
 // TODO: empty pattern should be allowed to match.
 // TODO: Create hardcoded en_US based get_sort_key and likematch.
 // TODO: Add test for UDFlocales.
@@ -414,19 +413,19 @@ UDFget_sort_key(blob** result, const char **input, const char **locale_id)
 	if (GDK_STRNIL(*input)) { // nil input implies nil result.
 		*result = (blob*) GDKmalloc(sizeof(nullval));
 		if (*result == NULL)
-			throw(MAL, "icu.get_sort_key", MAL_MALLOC_FAIL);
+			throw(MAL, "collation.get_sort_key", MAL_MALLOC_FAIL);
 		**result = nullval;
 		return MAL_SUCCEED;
 	}
 
 	if (GDK_STRNIL(*locale_id))
-		throw(MAL, "icu.get_sort_key", "locale identifier cannot be null.");
+		throw(MAL, "collation.get_sort_key", "locale identifier cannot be null.");
 
 	coll = ucol_open(*locale_id, &status);
 
 	if (!U_SUCCESS(status)) {
 		ucol_close(coll);
-		throw(MAL, "icu.get_sort_key", "Could not create ICU collator.");
+		throw(MAL, "collation.get_sort_key", "Could not create ICU collator.");
 	}
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
@@ -436,7 +435,7 @@ UDFget_sort_key(blob** result, const char **input, const char **locale_id)
 	u_strFromUTF8Lenient(u_input, u_input_capacity, NULL, *input, -1, &status);
 
 	if (!U_SUCCESS(status)){
-		throw(MAL, "icu.get_sort_key", "Could not transform target string from utf-8 to utf-16.");
+		throw(MAL, "collation.get_sort_key", "Could not transform target string from utf-8 to utf-16.");
 	}
 
 	len = do_get_sort_key(NULL, u_input, 0, coll);
@@ -465,13 +464,13 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 	UCollator* coll;
 
 	if (GDK_STRNIL(*locale_str))
-		throw(MAL, "icu.get_locales", "locale identifier cannot be null.");
+		throw(MAL, "collation.get_locales", "locale identifier cannot be null.");
 
 	coll = ucol_open(*locale_str, &status);
 
 	if (!U_SUCCESS(status)) {
 		ucol_close(coll);
-		throw(MAL, "icu.collationlike", "Could not create ICU collator.");
+		throw(MAL, "collation.collationlike", "Could not create ICU collator.");
 	}
 	/* allocate temporary space for transformed strings; we grow this
 	 * if we need more */
@@ -530,7 +529,7 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 		u_strFromUTF8Lenient(u_source, u_source_capacity, NULL, source, -1, &status);
 
 		if (!U_SUCCESS(status)){
-			throw(MAL, "icu.get_sort_key", "Could not transform target string from utf-8 to utf-16.");
+			throw(MAL, "collation.get_sort_key", "Could not transform target string from utf-8 to utf-16.");
 		}
 
 		size_t len = do_get_sort_key(dest->data, u_source, max_len, coll);
