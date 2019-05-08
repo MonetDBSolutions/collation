@@ -382,8 +382,10 @@ do_get_sort_key(char* dest, const UChar* source, size_t len, const UCollator* co
 
 // check GDKMalloc's
 // TODO: Create hardcoded en_US based get_sort_key and likematch.
-// TODO: Make bulk version for UDFlikematch working.
 // TODO: Clean up code base a bit.
+// TODO: null/empty checks for likematch
+// TODO: use/set null property of BATs
+// TODO: Add test for UDFlocales.
 
 char *
 UDFget_sort_key(blob** result, const char **input, const char **locale_id)
