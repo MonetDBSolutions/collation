@@ -340,7 +340,10 @@ UDFlocales(bat *result) {
 
 	max_len = DEFAULT_MAX_STRING_LOCALE_ID_SIZE;
 
-	dest = GDKmalloc(max_len);
+	if ( (dest = GDKmalloc(max_len)) == NULL )
+		goto bailout;
+
+
 
 	while (locale = uenum_next(locales, &len, &status)) {
 
@@ -393,8 +396,8 @@ do_get_sort_key(char* dest, const UChar* source, size_t len, const UCollator* co
     return ucol_getSortKey(coll, source, -1, dest, len);
 }
 
+// TODO: check error namespaces
 // TODO: empty pattern should be allowed to match.
-// check GDKMalloc's
 // TODO: Create hardcoded en_US based get_sort_key and likematch.
 // TODO: Add test for UDFlocales.
 // TODO: turn collationlike in a true filter function, i.e. implement collationlikeselect and collationlikejoin.
@@ -410,12 +413,14 @@ UDFget_sort_key(blob** result, const char **input, const char **locale_id)
 
 	if (GDK_STRNIL(*input)) { // nil input implies nil result.
 		*result = (blob*) GDKmalloc(sizeof(nullval));
+		if (*result == NULL)
+			throw(MAL, "icu.get_sort_key", MAL_MALLOC_FAIL);
 		**result = nullval;
 		return MAL_SUCCEED;
 	}
 
 	if (GDK_STRNIL(*locale_id))
-		throw(MAL, "icu.get_locales", "locale identifier cannot be null.");
+		throw(MAL, "icu.get_sort_key", "locale identifier cannot be null.");
 
 	coll = ucol_open(*locale_id, &status);
 
@@ -500,8 +505,14 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 		source = (const char *) BUNtail(bi, p);
 
 		if (GDK_STRNIL(source)) {
+			blob *ndest;
 
-			dest = GDKmalloc(sizeof(nullval));
+			if ( (ndest = GDKrealloc(dest, sizeof(nullval))) == NULL) {
+				/* if GDKrealloc fails, dest is still
+				 * allocated */
+				goto bailout;
+			}
+			dest = ndest;
 			*dest = nullval;
 
 			if (BUNappend(result_bat, dest, false) != GDK_SUCCEED) {

@@ -1,6 +1,8 @@
 #include "dfa.h"
 
+
 #include <gdk.h>
+#include <mal_exception.h>
 
 typedef struct state_t state_t;
 
@@ -126,7 +128,6 @@ static void set_literal_state(state_t* state) {
 }
 
 #define CHECK_PERCENTAGE_STATE(state) ({\
-    assert(state->error_string == NULL); \
     assert(state->current->card == GREATER_OR_EQUAL); \
     assert(state->handle_percentage == mc_wildcard_handle_percentage); \
     assert(state->handle_underscore == mc_wildcard_handle_underscore); \
@@ -135,15 +136,23 @@ static void set_literal_state(state_t* state) {
     assert(state->finalize == wildcard_finalize); \
 })
 
-static void append_character(search_string_t* buffer, const char character) {
+static void append_character(state_t* state, search_string_t* buffer, const char character) {
     size_t capacity;
 
     capacity = buffer->capacity;
 
     if (capacity == buffer->nbytes){
+        char* ndata;
         // reallocate string buffer with exponential reallocation strategy.
         capacity = 2 * capacity;
-        buffer->data = (char*) GDKrealloc(buffer->data, capacity * sizeof(char));
+        ndata = GDKrealloc(buffer->data, capacity * sizeof(char));
+
+        if (ndata == NULL) {
+            state->error_string = createException(MAL, "collation.dfa", MAL_MALLOC_FAIL);
+            return;
+        }
+
+        buffer->data = ndata;
         buffer->capacity = capacity;
     }
 
@@ -188,7 +197,7 @@ void initial_handle_normal_character(state_t* state, const char character) {
 
     searchcriterium = state->current;
 
-    append_character(&searchcriterium->search_string, character);
+    append_character(state, &searchcriterium->search_string, character);
 
     set_literal_state(state);
 }
@@ -223,13 +232,12 @@ void mc_wildcard_handle_normal_character(state_t* state, const char character) {
 
     searchcriterium = state->current;
 
-    append_character(&searchcriterium->search_string, character);
+    append_character(state, &searchcriterium->search_string, character);
 
     set_literal_state(state);
 }
 
 #define CHECK_UNDERSCORE_STATE(state) ({\
-    assert(state->error_string == NULL); \
     assert(state->current->start > 0); \
     assert(state->handle_percentage == sc_wildcard_handle_percentage); \
     assert(state->handle_underscore == sc_wildcard_handle_underscore); \
@@ -273,18 +281,17 @@ void sc_wildcard_handle_normal_character(state_t* state, const char character) {
 
     searchcriterium = state->current;
 
-    append_character(&searchcriterium->search_string, character);
+    append_character(state, &searchcriterium->search_string, character);
 
     set_literal_state(state);
 }
 
 void wildcard_finalize(state_t* state) {
 
-    append_character(&state->current->search_string, '\0');
+    append_character(state, &state->current->search_string, '\0');
 }
 
 #define CHECK_ESCAPE_STATE(state) ({\
-    assert(state->error_string == NULL); \
     assert(state->handle_percentage == escape_handle_normal_character); \
     assert(state->handle_underscore == escape_handle_normal_character); \
     assert(state->handle_escape_character == escape_handle_normal_character); \
@@ -299,7 +306,7 @@ void escape_handle_normal_character(state_t* state, const char character) {
 
     searchcriterium = state->current;
 
-    append_character(&searchcriterium->search_string, character);
+    append_character(state, &searchcriterium->search_string, character);
 
     set_literal_state(state);
 }
@@ -310,11 +317,7 @@ void escape_handle_error(state_t* state, const char character) {
 
     CHECK_ESCAPE_STATE(state);
 
-    char* error = "Non-escapable character:";
-
-    message_buffer = (char*) GDKmalloc(strlen(error) + 5);
-
-    sprintf(message_buffer, "%s %s.", error, &character);
+    message_buffer = createException(MAL, "collation.dfa", "Non-escapable character: %s.", &character);
 
     // Setting the error_string in the state signals an exception of the parsing process.
     state->error_string = message_buffer;
@@ -323,17 +326,13 @@ void escape_handle_error(state_t* state, const char character) {
 void escape_finalize(state_t* state) {
     char* message_buffer;
 
-    char* error = "Missing actual escape character.";
+    message_buffer = createException(MAL, "collation.dfa", "Missing actual escape character.");
 
-    message_buffer = (char*) GDKmalloc(strlen(error) + 1);
-
-    strcpy(message_buffer, error);
-
+    // Setting the error_string in the state signals an exception of the parsing process.
     state->error_string = message_buffer;
 }
 
 #define CHECK_LITERAL_STATE(state) ({\
-    assert(state->error_string == NULL); \
     assert(state->handle_percentage == literal_handle_percentage); \
     assert(state->handle_underscore == literal_handle_underscore); \
     assert(state->handle_escape_character == literal_handle_escape_character); \
@@ -349,7 +348,7 @@ static void increment_searchcriterium_list(state_t* state) {
      * So we finalize the current one with a null terminator and create a new searchcriterium.
      * Append new searchcriterium to linked list and update state's current accordingly.
      */
-    append_character(&state->current->search_string, '\0');
+    append_character(state, &state->current->search_string, '\0');
 
     new = create_searchcriterium();
     state->current->next = new;
@@ -399,7 +398,7 @@ void literal_handle_normal_character(state_t* state, const char character) {
 
     searchcriterium = state->current;
 
-    append_character(&searchcriterium->search_string, character);
+    append_character(state, &searchcriterium->search_string, character);
 
     set_literal_state(state);
 }
@@ -408,7 +407,7 @@ void literal_finalize(state_t* state) {
 
     increment_searchcriterium_list(state);
 
-    append_character(&state->current->search_string, '\0');
+    append_character(state, &state->current->search_string, '\0');
 
     assert(state->current->start == 0);
     state->current->card = EQUAL;
@@ -454,7 +453,7 @@ char* create_searchcriteria(searchcriterium_t** searchcriteria, const char* patt
         return state.error_string;
     }
 
-    return NULL;
+    return MAL_SUCCEED;
 }
 
 void destroy_searchcriteria(searchcriterium_t* searchcriteria) {
@@ -463,6 +462,7 @@ void destroy_searchcriteria(searchcriterium_t* searchcriteria) {
     do {
         next = searchcriteria->next;
 
+        GDKfree(searchcriteria->search_string.data);
         GDKfree(searchcriteria);
 
         searchcriteria = next;
