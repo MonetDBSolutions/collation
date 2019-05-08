@@ -31,8 +31,8 @@
 
 extern __declspec(dllexport) char *UDFget_sort_key(blob** result, const char **input, const char **locale_id);
 extern __declspec(dllexport) char *UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str);
-extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
-extern __declspec(dllexport) char *UDFBATlikematch(bat* result, const char** pattern, const bat *target, const char **locale_str);
+extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **u_target, const char **pattern, const char** locale_id);
+extern __declspec(dllexport) char *UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char **locale_str);
 extern __declspec(dllexport) char *UDFsearch(bit* result, const char **pattern, const char **u_target, const char** locale_id);
 extern __declspec(dllexport) char *UDFlocales(bat *result);
 
@@ -230,7 +230,7 @@ static char * likematch(bit* result, const char** pattern, const char** target, 
 }
 
 char *
-UDFlikematch(bit* result, const char** pattern, const char** target, const char** locale_id) {
+UDFlikematch(bit* result, const char** target, const char** pattern, const char** locale_id) {
 	UErrorCode status = U_ZERO_ERROR;
 	char* return_status;
 	UCollator* coll;
@@ -248,7 +248,7 @@ UDFlikematch(bit* result, const char** pattern, const char** target, const char*
 }
 
 char *
-UDFBATlikematch(bat* result, const char** pattern, const bat *target, const char **locale_str) {
+UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char **locale_str) {
 	UErrorCode status = U_ZERO_ERROR;
 	BAT *target_bat, *result_bat;
 	BATiter bi;
