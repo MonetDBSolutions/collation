@@ -155,6 +155,21 @@ explain with strings as (select 'FUSSBALL' as pattern, 'fußball' as target)
     select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
 
 explain select s, collationlike(s, 'mu%', 'en_US') as matches from foo;
+select s, collationlike(s, 'mu%', 'en_US') as matches from foo;
+
+explain select s from foo where collationlike(s, 'mu%', 'en_US');
+select s from foo where collationlike(s, 'mu%', 'en_US');
+
+with strings as (select 'FUSSBALL' as pattern, 'fußball' as target)
+    select target, pattern as matches from strings where collationlike(target, pattern, 'en_US');
+
+select s from foo where s like null;
+
+select s from foo where collationlike(s, null, 'en_US');
+
+select s from foo where s like 'mu%';
+
+select s from foo where collationlike(null, 'mu%', 'en_US');
 
 ROLLBACK;
 

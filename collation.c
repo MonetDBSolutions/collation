@@ -192,26 +192,15 @@ static char* likematch_recursive(bit* found, searchcriterium_t* current, int off
 	return MAL_SUCCEED;
 }
 
-static char * likematch(bit* result, const char** pattern, const char** target, UCollator* coll) {
+static char * likematch(bit* result, searchcriterium_t* head, const char** target, UCollator* coll) {
 	UErrorCode status = U_ZERO_ERROR;
 	UStringSearch* search;
 	char* return_status;
-	searchcriterium_t* head;
 
-	*result = false;
-
-	if (pattern == NULL) // NULL pattern implies false match
+	if (GDK_STRNIL(*target)) { // nil input implies false result.
+		*result = false;
 		return MAL_SUCCEED;
-
-	if (target == NULL) // NULL target implies false match
-		return MAL_SUCCEED;
-
-	if (!strlen(*pattern)) // empty pattern implies false match
-		return MAL_SUCCEED;
-
-	 if (return_status = create_searchcriteria(&head, *pattern, '\\')) {
-		 return return_status;
-	 }
+	}
 
 	size_t target_capacity = strlen(*target) + 1;
 	UChar u_target[target_capacity];
@@ -224,8 +213,6 @@ static char * likematch(bit* result, const char** pattern, const char** target, 
 
 	return_status = likematch_recursive(result, head, 0, u_target, nunits, coll);
 
-	destroy_searchcriteria(head);
-
 	return return_status;
 }
 
@@ -234,8 +221,18 @@ UDFlikematch(bit* result, const char** target, const char** pattern, const char*
 	UErrorCode status = U_ZERO_ERROR;
 	char* return_status;
 	UCollator* coll;
+	searchcriterium_t* head;
+
+	if (GDK_STRNIL(*pattern) || !strlen(*pattern)) { // nil or empty pattern implies false result.
+		*result = false;
+		return MAL_SUCCEED;
+	}
 
 	coll = ucol_open(*locale_id, &status);
+
+	if (return_status = create_searchcriteria(&head, *pattern, '\\')) {
+		return return_status;
+	}
 
 	if (!U_SUCCESS(status)) {
 		ucol_close(coll);
@@ -244,7 +241,11 @@ UDFlikematch(bit* result, const char** target, const char** pattern, const char*
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
 
-	return likematch(result, pattern, target, coll);
+	return_status = likematch(result, head, target, coll);
+
+	destroy_searchcriteria(head);
+
+	return return_status;
 }
 
 char *
@@ -252,11 +253,12 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 	UErrorCode status = U_ZERO_ERROR;
 	BAT *target_bat, *result_bat;
 	BATiter bi;
-	bit *dest;
+	bit *result_iter;
 	BUN p, q;
 	const char *source;
 	UCollator* coll;
 	char* return_status;
+	searchcriterium_t* head;
 
 	coll = ucol_open(*locale_str, &status);
 
@@ -267,28 +269,72 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
 
+	if (return_status = create_searchcriteria(&head, *pattern, '\\')) {
+		return return_status;
+	}
+
 	target_bat = BATdescriptor(*target);
+
+	if (GDK_STRNIL(*pattern) || !strlen(*pattern)) { // nil or empty pattern implies false result.
+		if ((result_bat = BATconstant(target_bat->hseqbase, TYPE_bit, &(bit) {false}, BATcount(target_bat), TRANSIENT)) == NULL)
+			throw(MAL, "regexp.rematchselect", GDK_EXCEPTION);
+		*result = result_bat->batCacheid;
+		BBPkeepref(*result);
+		return MAL_SUCCEED;
+	}
 
 	/* allocate result BAT */
 	result_bat = COLnew(target_bat->hseqbase, TYPE_bit, BATcount(target_bat), TRANSIENT);
+	result_iter = (bit *) Tloc(result_bat, 0);
+
+
 	/* loop through BAT input_bat; p is index of the entry we're working
 	 * on, q is used internally by BATloop to do the iterating */
 	bi = bat_iterator(target_bat);
+
 	BATloop(target_bat, p, q) {
 		source = (const char *) BUNtail(bi, p);
 
-		// TODO check for nulls.
-
-		if (return_status = likematch(dest, pattern, &source, coll)) {
+		if (GDK_STRNIL(source)) { // nil source implies false result.
+			*result_iter = false;
+			result_iter++;
+		}
+		else if (return_status = likematch(result_iter++, head, &source, coll)) {
 			goto bailout;
 		}
 	}
+
+	/* set properties and size of result BAT */
+	BATsetcount(result_bat, BATcount(target_bat));
+	if (BATcount(result_bat) > 1) {
+		/* if more than 1 result, it is not reverse sorted */
+		result_bat->tsorted = false;	/* probably not sorted */
+		result_bat->trevsorted = false;	/* probably not reverse sorted */
+		result_bat->tkey = false;	/* probably not key */
+	} else {
+		/* if empty or a single result, it is sorted, reverse
+		 * sorted, and key */
+		result_bat->tsorted = true;
+		result_bat->trevsorted = true;
+		result_bat->tkey = true;
+	}
+	result_bat->tnosorted = 0;	/* we don't know for sure */
+	result_bat->tnorevsorted = 0;	/* we don't know for sure */
+	result_bat->tnokey[0] = result_bat->tnokey[1] = 0;
+	result_bat->tnil = false;
+	result_bat->tnonil = true;
+
+	*result = result_bat->batCacheid;
+	BBPkeepref(*result);
+
+	destroy_searchcriteria(head);
 
 	return MAL_SUCCEED;
 
   bailout:
 	/* we only get here in the case of an allocation error; clean
 	 * up the mess we've created and throw an exception */
+	destroy_searchcriteria(head);
 	BBPunfix(result_bat->batCacheid);
 	throw(MAL, "icu.get_locales", MAL_MALLOC_FAIL);
 }
@@ -380,12 +426,12 @@ do_get_sort_key(char* dest, const UChar* source, size_t len, const UCollator* co
     return ucol_getSortKey(coll, source, -1, dest, len);
 }
 
+// TODO: empty pattern should be allowed to match.
 // check GDKMalloc's
 // TODO: Create hardcoded en_US based get_sort_key and likematch.
-// TODO: Clean up code base a bit.
-// TODO: null/empty checks for likematch
-// TODO: use/set null property of BATs
 // TODO: Add test for UDFlocales.
+// TODO: turn collationlike in a true filter function, i.e. implement collationlikeselect and collationlikejoin.
+// TODO: Clean up code base a bit.
 
 char *
 UDFget_sort_key(blob** result, const char **input, const char **locale_id)
