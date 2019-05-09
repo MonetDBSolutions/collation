@@ -17,6 +17,8 @@ For the future we need both blob.h in the installed include directory and it nee
 
 Make sure icu4c binaries are in the load-library-path, e.g. by using the proper default library installation locations, LD_LIBRARY_PATH or rpath.
 
+To build the udf library, simply execute `make` in the root of the source directory. To build and install it, execute `make install`. 
+
 # Getting started
 
 This repository introduces three sql functions which are declared in 82_collation.sql.
