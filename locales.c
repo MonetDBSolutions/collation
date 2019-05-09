@@ -10,6 +10,12 @@
 /*ICU includes*/
 #include <unicode/ucol.h>
 
+/* __declspec() must be used on Windows, but not on other systems */
+#ifndef _MSC_VER
+/* not Windows */
+#define __declspec(x)	/* nothing */
+#endif
+
 const size_t DEFAULT_MAX_STRING_LOCALE_ID_SIZE = 64;
 
 extern __declspec(dllexport) char *UDFlocales(bat *result);

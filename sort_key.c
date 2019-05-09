@@ -12,6 +12,12 @@
 #include <unicode/usearch.h>
 #include <unicode/ustring.h>
 
+/* __declspec() must be used on Windows, but not on other systems */
+#ifndef _MSC_VER
+/* not Windows */
+#define __declspec(x)	/* nothing */
+#endif
+
 // START INCLUDE HACK TO OBTAIN THE NECESSARY BLOB DECLARATION AND TYPES.
 typedef struct blob {
 	size_t nitems;
