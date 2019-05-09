@@ -5,7 +5,7 @@
 # Copyright 2013-2018 MonetDB B.V.
 
 module collation;
-command get_sort_key(val:str, locale:str):blob
+command get_sort_key(input:str, locale:str):blob
 address UDFget_sort_key
 comment "Transform a utf8 string into a binary collation respecting sortkey.";
 
@@ -23,6 +23,6 @@ address UDFBATlikematch
 comment "Check if input matches with pattern.";
 
 module batcollation;
-command get_sort_key(val:bat[:str], locale:str):bat[:blob]
+command get_sort_key(input:bat[:str], locale:str):bat[:blob]
 address UDFBATget_sort_key
 comment "Transform a utf8 string into a binary collation respecting sortkey.";
