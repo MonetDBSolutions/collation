@@ -4,8 +4,6 @@
 #
 # Copyright 2013-2018 MonetDB B.V.
 
-#LIBDIR = $(shell pkg-config --variable=libdir monetdb5)
-
 LIBDIR = $(shell pkg-config --variable=libdir monetdb5)
 
 CFLAGS  += $(shell pkg-config --cflags monetdb5) $(shell pkg-config --cflags icu-i18n) $(shell pkg-config --cflags icu-io) $(shell pkg-config --cflags icu-lx) $(shell pkg-config --cflags icu-uc) -g
