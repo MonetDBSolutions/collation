@@ -13,15 +13,20 @@ LDFLAGS += $(shell pkg-config --libs monetdb5)   $(shell pkg-config --libs icu-i
 
 all: lib_collation.so
 
-lib_collation.so: collation.o  dfa.o
-	$(CC) -fPIC -DPIC -o lib_collation.so -shared dfa.o -shared collation.o $(LDFLAGS) -Wl,-soname -Wl,lib_collation.so
+lib_collation.so: like_match.o dfa.o sort_key.o locales.o
+	$(CC) -fPIC -DPIC -shared -o lib_collation.so dfa.o -shared like_match.o -shared locales.o -shared sort_key.o  $(LDFLAGS) -Wl,-soname -Wl,lib_collation.so
+
+locales.o: locales.c
+	$(CC) -fPIC -DPIC $(CFLAGS) -c locales.c
 
 dfa.o: dfa.c
 	$(CC) -fPIC -DPIC $(CFLAGS) -c dfa.c
 
+sort_key.o: sort_key.c
+	$(CC) -fPIC -DPIC $(CFLAGS) -c sort_key.c
 
-collation.o: collation.c
-	$(CC) -fPIC -DPIC $(CFLAGS) -c collation.c
+like_match.o: like_match.c
+	$(CC) -fPIC -DPIC $(CFLAGS) -c like_match.c
 
 clean:
 	rm -f *.o *.so
