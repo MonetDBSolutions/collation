@@ -167,6 +167,9 @@ select s from foo where collationlike(null, 'mu%', 'en_US');
 
 ROLLBACK;
 
+select 'TESTING TABLE PRODUCING FUNCTION LOCALES().';
+select locale from locales();
+
 select 'TESTING NULL VALUE FOR LOCALE IN BULK VERSION.';
 select get_sort_key('asdsad', null);
 

@@ -29,7 +29,6 @@
 #define __declspec(x)	/* nothing */
 #endif
 
-// TODO: Add test for UDFlocales.
 // TODO: Check if bulk versions are called on april branch.
 // TODO: empty pattern should be allowed to match.
 // TODO: split out this file into several source code files.
