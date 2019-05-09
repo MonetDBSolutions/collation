@@ -2,13 +2,13 @@ This repository contains prototypes for MonetDB UDF's to accomodate new collatio
 
 # ICU
 
-The repository has a third pary dependency on ICU4C which is the C version of the International Components for Unicode. This library offers all kinds of tools to deal with text in a locale sensitive and very customizable manner.
+The repository has a third pary dependency on icu4c which is the C version of the International Components for Unicode. This library offers all kinds of tools to deal with text in a locale sensitive and very customizable manner.
 
 icu4c is available on all major platforms and most package managers should be able to install it from their respective package repository.
 
 # Build and installation details
 
-the make file assumes that MonetDB and ICU4C are installed in directories that can be found by pkg-config.
+the make file assumes that MonetDB and icu4c are installed in directories that can be found by pkg-config.
 
 I have the issue on my ubuntu machine that I have to remove the bzip2 dependency from
 <prefix>/lib/pkgconfig/monetdb-stream.pc
