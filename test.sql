@@ -167,12 +167,12 @@ select s from foo where collationlike(null, 'mu%', 'en_US');
 
 ROLLBACK;
 
+select 'TESTING NULL VALUE FOR LOCALE IN BULK VERSION.';
 select get_sort_key('asdsad', null);
 
+select 'TESTING NULL VALUE FOR LOCALE IN BULK VERSION.';
 START TRANSACTION;
-
 create table foo (s STRING);
-
 insert into foo values
     ('Mvller'),
     ('Müller'),
@@ -183,16 +183,17 @@ insert into foo values
     ('House'),
     ('Fußball'),
     ('_VERY_LONG_STRING_ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß');
-
 select get_sort_key(s, null) from foo;
-
 ROLLBACK;
 
+select 'TESTING NON-ESCAPABLE CHARACTER 1';
 with strings as (select '\\x' as pattern, 'xxxx' as target)
     select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
 
+select 'TESTING NON-ESCAPABLE CHARACTER 2';
 with strings as (select 'abc\\x' as pattern, 'xxxx' as target)
     select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
 
+select 'TESTING MISSING ESCAPE CHARACTER';
 with strings as (select '\\' as pattern, 'xxxx' as target)
     select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
