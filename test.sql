@@ -14,6 +14,7 @@ insert into foo values
     ('_VERY_LONG_STRING_ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß'),
     (null);
 
+SELECT 'TESTS FOR get_sort_key';
 explain select get_sort_key('asdsad', 'en_US');
 
 explain select get_sort_key(s, 'en_US') from foo;
@@ -23,12 +24,7 @@ select * from foo order by get_sort_key(s, 'en_US');
 
 select * from foo order by s;
 
-select * from foo where s like '%Mu%';
-select * from foo where s like '%Mü%';
-select * from foo where s ilike '%SS%';
-select * from foo where s ilike '%ß%';
-
-
+SELECT 'TESTS FOR collationlike';
 with strings as (select 'c%de' as pattern, 'cbde' as target)
     select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
 
@@ -167,13 +163,13 @@ select s from foo where collationlike(null, 'mu%', 'en_US');
 
 ROLLBACK;
 
-select 'TESTING TABLE PRODUCING FUNCTION LOCALES().';
+select 'TESTING TABLE PRODUCING FUNCTION locales().';
 select locale from locales();
 
-select 'TESTING NULL VALUE FOR LOCALE IN BULK VERSION.';
+select 'TESTING NULL VALUE FOR LOCALE PARAMETER FOR get_sort_key.';
 select get_sort_key('asdsad', null);
 
-select 'TESTING NULL VALUE FOR LOCALE IN BULK VERSION.';
+select 'TESTING NULL VALUE FOR LOCALE PARAMETER FOR get_sort_key IN BULK VERSION.';
 START TRANSACTION;
 create table foo (s STRING);
 insert into foo values
@@ -189,14 +185,14 @@ insert into foo values
 select get_sort_key(s, null) from foo;
 ROLLBACK;
 
-select 'TESTING NON-ESCAPABLE CHARACTER 1';
+select 'TESTING NON-ESCAPABLE CHARACTER 1 FOR collationlike';
 with strings as (select '\\x' as pattern, 'xxxx' as target)
     select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
 
-select 'TESTING NON-ESCAPABLE CHARACTER 2';
+select 'TESTING NON-ESCAPABLE CHARACTER 2 FOR collationlike';
 with strings as (select 'abc\\x' as pattern, 'xxxx' as target)
     select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
 
-select 'TESTING MISSING ESCAPE CHARACTER';
+select 'TESTING MISSING ESCAPE CHARACTER FOR collationlike';
 with strings as (select '\\' as pattern, 'xxxx' as target)
     select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
