@@ -21,9 +21,9 @@ Make sure icu4c binaries are in the load-library-path, e.g. by using the proper 
 
 This repository introduces three sql functions which are declared in 82_collation.sql.
 
-## `FUNCTION get_sort_key(src STRING, locale STRING) RETURNS BLOB`
+## `FUNCTION get_sort_key(input STRING, locale STRING) RETURNS BLOB`
 
-This function computes a sort key for each string value in src such that it respects the collator with primary strength associated with the locale identifier. Its main purpose is to order string columns according to their collation order, e.g.
+This function computes a sort key for each string value in `input` such that it respects the collator with primary strength associated with the `locale` identifier. Its main purpose is to order string columns according to their collation order, e.g.
 
 ```sql
 SELECT s FROM foo ORDER BY get_sort_key(S, 'en_US');

@@ -4,7 +4,7 @@
 --
 -- Copyright 2013-2018 MonetDB B.V.
 
-CREATE FUNCTION get_sort_key(src STRING, locale STRING) RETURNS BLOB
+CREATE FUNCTION get_sort_key(input STRING, locale STRING) RETURNS BLOB
        EXTERNAL NAME collation.get_sort_key;
 
 CREATE FUNCTION collationlike(input STRING, pattern STRING, locale STRING) RETURNS BOOLEAN
