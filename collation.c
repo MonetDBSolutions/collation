@@ -32,6 +32,7 @@
 // TODO: Add test for UDFlocales.
 // TODO: Check if bulk versions are called on april branch.
 // TODO: empty pattern should be allowed to match.
+// TODO: split out this file into several source code files.
 // TODO: turn collationlike in a true filter function, i.e. implement collationlikeselect and collationlikejoin.
 // TODO: Clean up code base a bit.
 // TODO: Create hardcoded en_US based get_sort_key and likematch.
