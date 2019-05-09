@@ -20,10 +20,8 @@
 #define __declspec(x)	/* nothing */
 #endif
 
-// TODO: empty pattern should be allowed to match.
 // TODO: turn collationlike in a true filter function, i.e. implement collationlikeselect and collationlikejoin.
 // TODO: Clean up code base a bit.
-// TODO: Create hardcoded en_US based get_sort_key and likematch.
 
 extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **u_target, const char **pattern, const char** locale_id);
 extern __declspec(dllexport) char *UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char **locale_str);
@@ -137,6 +135,13 @@ static char * likematch(bit* result, searchcriterium_t* head, const char** targe
 		return MAL_SUCCEED;
 	}
 
+	/* unfortunately ICU cannot handle empty target strings,
+	 * hence we have to check this ourselves.*/
+	if (!strlen(*target)) {
+		*result = (head->card == GREATER_OR_EQUAL && head->start == 0);
+		return  MAL_SUCCEED;
+	}
+
 	size_t target_capacity = strlen(*target) + 1;
 	UChar u_target[target_capacity];
 	int nunits;
@@ -158,8 +163,13 @@ UDFlikematch(bit* result, const char** target, const char** pattern, const char*
 	UCollator* coll;
 	searchcriterium_t* head;
 
-	if (GDK_STRNIL(*pattern) || !strlen(*pattern)) { // nil or empty pattern implies false result.
+	if (GDK_STRNIL(*pattern)) { // nil pattern implies false result.
 		*result = false;
+		return MAL_SUCCEED;
+	}
+
+	if (!strlen(*pattern)) { // empty pattern can only match empty target.
+		*result = !strlen(*target);
 		return MAL_SUCCEED;
 	}
 
@@ -195,48 +205,67 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 	char* return_status;
 	searchcriterium_t* head;
 
-	coll = ucol_open(*locale_str, &status);
-
-	if (!U_SUCCESS(status)) {
-		ucol_close(coll);
-		throw(MAL, "collation.collationlike", "Could not create ICU collator.");
-	}
-
-	ucol_setStrength(coll, UCOL_PRIMARY);
-
-	if (return_status = create_searchcriteria(&head, *pattern, '\\')) {
-		return return_status;
-	}
-
 	target_bat = BATdescriptor(*target);
 
-	if (GDK_STRNIL(*pattern) || !strlen(*pattern)) { // nil or empty pattern implies false result.
+	if (GDK_STRNIL(*pattern)) { // nil pattern implies false result.
 		if ((result_bat = BATconstant(target_bat->hseqbase, TYPE_bit, &(bit) {false}, BATcount(target_bat), TRANSIENT)) == NULL)
-			throw(MAL, "regexp.rematchselect", GDK_EXCEPTION);
-		*result = result_bat->batCacheid;
-		BBPkeepref(*result);
-		return MAL_SUCCEED;
+			throw(MAL, "collation.UDFBATlikematch", GDK_EXCEPTION);
 	}
+	else if (!strlen(*pattern)) { // empty pattern
+		if ((result_bat = COLnew(target_bat->hseqbase, TYPE_bit, BATcount(target_bat), TRANSIENT)) == NULL)
+			throw(MAL, "collation.UDFBATlikematch", GDK_EXCEPTION);
 
-	/* allocate result BAT */
-	result_bat = COLnew(target_bat->hseqbase, TYPE_bit, BATcount(target_bat), TRANSIENT);
-	result_iter = (bit *) Tloc(result_bat, 0);
+		result_iter = (bit *) Tloc(result_bat, 0);
 
+		/* loop through BAT input_bat; p is index of the entry we're working
+		* on, q is used internally by BATloop to do the iterating */
+		bi = bat_iterator(target_bat);
 
-	/* loop through BAT input_bat; p is index of the entry we're working
-	 * on, q is used internally by BATloop to do the iterating */
-	bi = bat_iterator(target_bat);
+		BATloop(target_bat, p, q) {
+			source = (const char *) BUNtail(bi, p);
 
-	BATloop(target_bat, p, q) {
-		source = (const char *) BUNtail(bi, p);
-
-		if (GDK_STRNIL(source)) { // nil source implies false result.
-			*result_iter = false;
+			*result_iter = !GDK_STRNIL(source) && !strlen(source);
 			result_iter++;
 		}
-		else if (return_status = likematch(result_iter++, head, &source, coll)) {
-			goto bailout;
+	}
+	else {
+		coll = ucol_open(*locale_str, &status);
+
+		if (!U_SUCCESS(status)) {
+			ucol_close(coll);
+			throw(MAL, "collation.collationlike", "Could not create ICU collator.");
 		}
+
+		ucol_setStrength(coll, UCOL_PRIMARY);
+
+		if (return_status = create_searchcriteria(&head, *pattern, '\\')) {
+			return return_status;
+		}
+
+		target_bat = BATdescriptor(*target);
+
+		/* allocate result BAT */
+		result_bat = COLnew(target_bat->hseqbase, TYPE_bit, BATcount(target_bat), TRANSIENT);
+		result_iter = (bit *) Tloc(result_bat, 0);
+
+
+		/* loop through BAT input_bat; p is index of the entry we're working
+		* on, q is used internally by BATloop to do the iterating */
+		bi = bat_iterator(target_bat);
+
+		BATloop(target_bat, p, q) {
+			source = (const char *) BUNtail(bi, p);
+
+			if (GDK_STRNIL(source)) { // nil source implies false result.
+				*result_iter = false;
+				result_iter++;
+			}
+			else if (return_status = likematch(result_iter++, head, &source, coll)) {
+				goto bailout;
+			}
+		}
+
+		destroy_searchcriteria(head);
 	}
 
 	/* set properties and size of result BAT */
@@ -261,8 +290,6 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 
 	*result = result_bat->batCacheid;
 	BBPkeepref(*result);
-
-	destroy_searchcriteria(head);
 
 	return MAL_SUCCEED;
 

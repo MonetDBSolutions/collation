@@ -12,7 +12,8 @@ insert into foo values
     ('House'),
     ('Fußball'),
     ('_VERY_LONG_STRING_ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß'),
-    (null);
+    (null),
+    ('');
 
 SELECT 'TESTS FOR get_sort_key';
 explain select get_sort_key('asdsad', 'en_US');
@@ -127,9 +128,6 @@ with strings as (select '__%_bc' as pattern, 'bcäbc' as target)
 with strings as (select '\\_\\_\\_\\_' as pattern, 'xxxx' as target)
     select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
 
-with strings as (select 'mu%' as pattern)
-    select strings.pattern, foo.s, collationlike(strings.pattern, foo.s, 'en_US') as match from strings, foo;
-
 with strings as (select '%A%' as pattern, 'bcäbc' as target)
     select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
 with strings as (select '%A%' as pattern, 'bcäbc' as target)
@@ -160,6 +158,44 @@ select s from foo where collationlike(s, null, 'en_US');
 select s from foo where s like 'mu%';
 
 select s from foo where collationlike(null, 'mu%', 'en_US');
+
+--null and empty string corner cases
+
+with strings as (select null as pattern, '' as target)
+    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
+
+with strings as (select '' as pattern, '' as target)
+    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
+
+with strings as (select '%' as pattern, '' as target)
+    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
+
+with strings as (select 'd' as pattern, '' as target)
+    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
+
+with strings as (select '' as pattern, 'd' as target)
+    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
+
+with strings as (select '%' as pattern, '' as target)
+    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
+
+with strings as (select '%_' as pattern, '' as target)
+    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
+
+with strings as (select null as pattern)
+    select strings.pattern, foo.s, collationlike(foo.s, strings.pattern, 'en_US') as match from strings, foo;
+
+with strings as (select '' as pattern)
+    select strings.pattern, foo.s, collationlike(foo.s, strings.pattern, 'en_US') as match from strings, foo;
+
+with strings as (select '%' as pattern)
+    select strings.pattern, foo.s, collationlike(foo.s, strings.pattern, 'en_US') as match from strings, foo;
+
+with strings as (select '%_' as pattern)
+    select strings.pattern, foo.s, collationlike(foo.s, strings.pattern, 'en_US') as match from strings, foo;
+
+with strings as (select 'mu%' as pattern)
+    select strings.pattern, foo.s, collationlike(foo.s, strings.pattern, 'en_US') as match from strings, foo;
 
 ROLLBACK;
 
