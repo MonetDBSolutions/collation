@@ -9,7 +9,7 @@
 /* monetdb_config.h must be included as the first include file */
 #include <monetdb_config.h>
 
-#include <blob.h>
+//#include <blob.h> // should be included in the installation/include directory
 #include <mal_exception.h>
 
 /* system include files */
@@ -29,20 +29,30 @@
 #define __declspec(x)	/* nothing */
 #endif
 
-// TODO: Check if bulk versions are called on april branch.
 // TODO: empty pattern should be allowed to match.
 // TODO: split out this file into several source code files.
 // TODO: turn collationlike in a true filter function, i.e. implement collationlikeselect and collationlikejoin.
 // TODO: Clean up code base a bit.
 // TODO: Create hardcoded en_US based get_sort_key and likematch.
 
+// START INCLUDE HACK TO OBTAIN THE NECESSARY BLOB DECLARATION AND TYPES.
+typedef struct blob {
+	size_t nitems;
+	/*unsigned */ char data[FLEXIBLE_ARRAY_MEMBER];
+} blob;
+
+mal_export int TYPE_blob;
+
+static blob nullval = {~(size_t) 0};
+
+mal_export var_t blobsize(size_t nitems);
+// END INCLUDE HACK TO OBTAIN THE NECESSARY BLOB DECLARATION AND TYPES.
+
 extern __declspec(dllexport) char *UDFget_sort_key(blob** result, const char **input, const char **locale_id);
 extern __declspec(dllexport) char *UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str);
 extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **u_target, const char **pattern, const char** locale_id);
 extern __declspec(dllexport) char *UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char **locale_str);
 extern __declspec(dllexport) char *UDFlocales(bat *result);
-
-static blob nullval = {~(size_t) 0};
 
 static char* first_search(UStringSearch** search, int offset, const char* pattern, const UChar* u_target, UCollator* col) {
 	UErrorCode status = U_ZERO_ERROR;
