@@ -5,25 +5,18 @@
  * Copyright 2013-2018 MonetDB B.V.
  */
 
-/* monetdb_config.h must be included as the first include file */
 #include <monetdb_config.h>
-
-//#include <blob.h> // should be included in the installation/include directory
 #include <mal_exception.h>
 
-/* system include files */
 #include <string.h>
 
-/*ICU includes*/
 #include <unicode/ucol.h>
 #include <unicode/usearch.h>
 #include <unicode/ustring.h>
 
 #include "dfa.h"
 
-/* __declspec() must be used on Windows, but not on other systems */
 #ifndef _MSC_VER
-/* not Windows */
 #define __declspec(x)	/* nothing */
 #endif
 
@@ -224,8 +217,6 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 
 		result_iter = (bit *) Tloc(result_bat, 0);
 
-		/* loop through BAT input_bat; p is index of the entry we're working
-		* on, q is used internally by BATloop to do the iterating */
 		bi = bat_iterator(target_bat);
 
 		BATloop(target_bat, p, q) {
@@ -251,13 +242,10 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 
 		target_bat = BATdescriptor(*target);
 
-		/* allocate result BAT */
 		result_bat = COLnew(target_bat->hseqbase, TYPE_bit, BATcount(target_bat), TRANSIENT);
 		result_iter = (bit *) Tloc(result_bat, 0);
 
 
-		/* loop through BAT input_bat; p is index of the entry we're working
-		* on, q is used internally by BATloop to do the iterating */
 		bi = bat_iterator(target_bat);
 
 		BATloop(target_bat, p, q) {
@@ -275,10 +263,8 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 		destroy_searchcriteria(head);
 	}
 
-	/* set properties and size of result BAT */
 	BATsetcount(result_bat, BATcount(target_bat));
 	if (BATcount(result_bat) > 1) {
-		/* if more than 1 result, it is not reverse sorted */
 		result_bat->tsorted = false;	/* probably not sorted */
 		result_bat->trevsorted = false;	/* probably not reverse sorted */
 		result_bat->tkey = false;	/* probably not key */
@@ -301,8 +287,6 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 	return MAL_SUCCEED;
 
   bailout:
-	/* we only get here in the case of an allocation error; clean
-	 * up the mess we've created and throw an exception */
 	destroy_searchcriteria(head);
 	BBPunfix(result_bat->batCacheid);
 	throw(MAL, "collation.get_locales", MAL_MALLOC_FAIL);

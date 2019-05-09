@@ -5,9 +5,7 @@
  * Copyright 2013-2018 MonetDB B.V.
  */
 
-/*
- * LIKE pattern parser based on Deterministic Finite Automaton architecture.
- */
+// LIKE pattern parser based on Deterministic Finite Automaton architecture.
 
 #include "dfa.h"
 
@@ -323,7 +321,6 @@ void escape_handle_normal_character(state_t* state, const char character) {
 }
 
 void escape_handle_error(state_t* state, const char character) {
-    // char character;
     char* message_buffer;
 
     CHECK_ESCAPE_STATE(state);

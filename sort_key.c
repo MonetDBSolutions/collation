@@ -5,27 +5,20 @@
  * Copyright 2013-2018 MonetDB B.V.
  */
 
-/* monetdb_config.h must be included as the first include file */
 #include <monetdb_config.h>
-
-//#include <blob.h> // should be included in the installation/include directory
 #include <mal_exception.h>
 
-/* system include files */
 #include <string.h>
 
-/*ICU includes*/
 #include <unicode/ucol.h>
 #include <unicode/usearch.h>
 #include <unicode/ustring.h>
 
-/* __declspec() must be used on Windows, but not on other systems */
 #ifndef _MSC_VER
-/* not Windows */
 #define __declspec(x)	/* nothing */
 #endif
 
-// START INCLUDE HACK TO OBTAIN THE NECESSARY BLOB DECLARATION AND TYPES.
+// START INCLUDE HACK TO OBTAIN THE NECESSARY BLOB DECLARATION AND TYPES instead of #include <blob.h>.
 typedef struct blob {
 	size_t nitems;
 	/*unsigned */ char data[FLEXIBLE_ARRAY_MEMBER];
@@ -118,8 +111,7 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 		ucol_close(coll);
 		throw(MAL, "collation.collationlike", "Could not create ICU collator.");
 	}
-	/* allocate temporary space for transformed strings; we grow this
-	 * if we need more */
+
 	max_len = DEFAULT_MAX_STRING_KEY_SIZE;
 	nbytes = blobsize(max_len);
 	dest = GDKmalloc(nbytes);
@@ -132,10 +124,8 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 		throw(MAL, "collation.get_sort_key", RUNTIME_OBJECT_MISSING);
 	}
 
-	/* we should only get called for string BATs */
 	assert(input_bat->ttype == TYPE_str);
 
-	/* allocate result BAT */
 	result_bat = COLnew(input_bat->hseqbase, TYPE_blob, BATcount(input_bat), TRANSIENT);
 	if (result_bat == NULL) {
 		BBPunfix(input_bat->batCacheid);
@@ -143,8 +133,6 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 		throw(MAL, "collation.get_sort_key", MAL_MALLOC_FAIL);
 	}
 
-	/* loop through BAT input_bat; p is index of the entry we're working
-	 * on, q is used internally by BATloop to do the iterating */
 	bi = bat_iterator(input_bat);
 	BATloop(input_bat, p, q) {
 		source = (const char *) BUNtail(bi, p);
@@ -153,17 +141,12 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 			blob *ndest;
 
 			if ( (ndest = GDKrealloc(dest, sizeof(nullval))) == NULL) {
-				/* if GDKrealloc fails, dest is still
-				 * allocated */
 				goto bailout;
 			}
 			dest = ndest;
 			*dest = nullval;
 
 			if (BUNappend(result_bat, dest, false) != GDK_SUCCEED) {
-				/* BUNappend can fail since it may have to
-				* grow memory areas--especially true for
-				* string BATs */
 				goto bailout;
 			}
 
@@ -180,7 +163,6 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 
 		size_t len = do_get_sort_key(dest->data, u_source, max_len, coll);
 
-		/* make sure dest is large enough */
 		if (len >= max_len) {
 			blob *ndest;
 
@@ -188,8 +170,6 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 			nbytes = blobsize(max_len);
 			ndest = GDKrealloc(dest, nbytes);
 			if (ndest == NULL) {
-				/* if GDKrealloc fails, dest is still
-				 * allocated */
 				goto bailout;
 			}
 			dest = ndest;
@@ -200,9 +180,6 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 		dest->nitems = len;
 
 		if (BUNappend(result_bat, dest, false) != GDK_SUCCEED) {
-			/* BUNappend can fail since it may have to
-			 * grow memory areas--especially true for
-			 * string BATs */
 			goto bailout;
 		}
 	}
@@ -214,8 +191,6 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 	return MAL_SUCCEED;
 
   bailout:
-	/* we only get here in the case of an allocation error; clean
-	 * up the mess we've created and throw an exception */
 	GDKfree(dest);
 	BBPunfix(input_bat->batCacheid);
 	BBPunfix(result_bat->batCacheid);
