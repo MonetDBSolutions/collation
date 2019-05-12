@@ -74,13 +74,13 @@ static char* likematch_recursive(bit* found, searchcriterium_t* current, int off
 
 	*found = false;
 
-	if (strlen(current->search_string.data)) {
-		if (return_status = first_search(&search, offset, current->search_string.data, target, coll)) {
+	if (current->search_string.nbytes > 1 /*non-empty string*/) {
+		if ( (return_status = first_search(&search, offset, current->search_string.data, target, coll)) ) {
 			return return_status;
 		}
 	}
 	else {
-		// last part of pattern.
+		// empty string signals end of pattern parts.
 		*found = nunits >= (offset + current->start);
 
 		if (current->card == EQUAL) {
