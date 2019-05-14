@@ -1,0 +1,19 @@
+stap0 mailtje sjoerd over posix C coll functions en hun beperkingen. En mogelijke uitbreiding op de huidige ILIKE.
+stap1 performance analyse
+stap2 tpch orders.o_comment column of strings in sf 10 om performance te kunnen quantificeren
+stap3 mysql erbij betrekken
+stap4 een aantal patterns definieren.
+
+Check if ICU thread safe is
+
+implementatie verbeteringen
+
+gebruik string buffer in bat loop om utf8 naar utf 16 te vertalen. geldt voor zowel pattern als target.
+
+hergebruik search objecten van icu
+
+Recursieve functie calls vervangen met iteratie
+
+kijken of er heuristieken zijn om icu calls to shortcutten naar pcre calls. Is dat mogelijk?
+
+Implement likematch as a proper filter function.
