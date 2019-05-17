@@ -28,7 +28,6 @@ extern __declspec(dllexport) char *UDFBATlikematch(bat* result, const bat *targe
 
 static char* first_search(UStringSearch** search, int offset, const char* pattern, const UChar* u_target, UCollator* col) {
 	UErrorCode status = U_ZERO_ERROR;
-	char* return_status;
 
 	size_t pattern_capacity = strlen(pattern) + 1;
 	UChar u_pattern[pattern_capacity];
