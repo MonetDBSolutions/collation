@@ -108,13 +108,13 @@ static char* likematch_recursive(bit* found, searchcriterium_t* current, int off
 		if (*found && current->next) {
 			int next_offset =  pos + usearch_getMatchedLength(search);
 
-			if (return_status = likematch_recursive(found, current->next, next_offset, target, nunits, coll)) {
+			if ( (return_status = likematch_recursive(found, current->next, next_offset, target, nunits, coll)) ) {
 				usearch_close(search);
 				return return_status;
 			}
 		}
 
-		if(return_status = next_search(search))
+		if( (return_status = next_search(search)) )
 			return return_status;
 
 	} while(!*found);
@@ -174,7 +174,7 @@ UDFlikematch(bit* result, const char** target, const char** pattern, const char*
 
 	coll = ucol_open(*locale_id, &status);
 
-	if (return_status = create_searchcriteria(&head, *pattern, '\\')) {
+	if ( (return_status = create_searchcriteria(&head, *pattern, '\\')) ) {
 		return return_status;
 	}
 
@@ -235,7 +235,7 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 
 		ucol_setStrength(coll, UCOL_PRIMARY);
 
-		if (return_status = create_searchcriteria(&head, *pattern, '\\')) {
+		if ( (return_status = create_searchcriteria(&head, *pattern, '\\')) ) {
 			return return_status;
 		}
 
@@ -254,7 +254,7 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 				*result_iter = false;
 				result_iter++;
 			}
-			else if (return_status = likematch(result_iter++, head, &source, coll)) {
+			else if ( (return_status = likematch(result_iter++, head, &source, coll)) ) {
 				goto bailout;
 			}
 		}

@@ -57,7 +57,7 @@ UDFlocales(bat *result) {
 
 
 
-	while (locale = uenum_next(locales, &len, &status)) {
+	while ( (locale = uenum_next(locales, &len, &status)) ) {
 
 		if (!U_SUCCESS(status)){
 			goto bailout;
