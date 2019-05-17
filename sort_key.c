@@ -38,7 +38,7 @@ const size_t DEFAULT_MAX_STRING_KEY_SIZE = 128;
 
 static size_t
 do_get_sort_key(char* dest, const UChar* source, size_t len, const UCollator* coll) {
-    return ucol_getSortKey(coll, source, -1, dest, len);
+    return ucol_getSortKey(coll, source, -1, (uint8_t*)/*TODO: perhaps our blob type should use uint8_t instead of char*/ dest, len);
 }
 
 char *
