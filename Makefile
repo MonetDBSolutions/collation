@@ -6,7 +6,7 @@
 
 LIBDIR = $(shell pkg-config --variable=libdir monetdb5)
 
-CFLAGS  += $(shell pkg-config --cflags monetdb5) $(shell pkg-config --cflags icu-i18n) $(shell pkg-config --cflags icu-io) $(shell pkg-config --cflags icu-lx) $(shell pkg-config --cflags icu-uc) -g
+CFLAGS  += -Wall $(shell pkg-config --cflags monetdb5) $(shell pkg-config --cflags icu-i18n) $(shell pkg-config --cflags icu-io) $(shell pkg-config --cflags icu-lx) $(shell pkg-config --cflags icu-uc) -g
 LDFLAGS += $(shell pkg-config --libs monetdb5)   $(shell pkg-config --libs icu-i18n)   $(shell pkg-config --libs icu-io)   $(shell pkg-config --libs icu-lx)   $(shell pkg-config --libs icu-uc)
 
 all: lib_collation.so
