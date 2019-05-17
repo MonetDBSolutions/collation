@@ -78,6 +78,8 @@ static searchcriterium_t* create_searchcriterium() {
     first->search_string.capacity = INIT_BUFFER_SIZE;
     first->search_string.nbytes = 0;
     first->next = NULL;
+
+    return first;
 }
 
 static void set_initial_state(state_t* state, char esc_char) {
