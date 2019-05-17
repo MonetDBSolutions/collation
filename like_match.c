@@ -126,7 +126,6 @@ static char* likematch_recursive(bit* found, searchcriterium_t* current, int off
 
 static char * likematch(bit* result, searchcriterium_t* head, const char** target, UCollator* coll) {
 	UErrorCode status = U_ZERO_ERROR;
-	UStringSearch* search;
 	char* return_status;
 
 	if (GDK_STRNIL(*target)) { // nil input implies false result.

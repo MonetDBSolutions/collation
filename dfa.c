@@ -380,7 +380,6 @@ void literal_handle_percentage(state_t* state, const char character) {
 
 void literal_handle_underscore(state_t* state, const char character) {
     (void) character;
-    searchcriterium_t* new;
 
     CHECK_LITERAL_STATE(state);
 

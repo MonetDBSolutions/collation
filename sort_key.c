@@ -99,7 +99,7 @@ UDFBATget_sort_key(bat *result, const bat *input, const char **locale_str)
 	blob *dest;
 	BUN p, q;
 	const char *source;
-	size_t len, max_len, nbytes;
+	size_t max_len, nbytes;
 	UCollator* coll;
 
 	if (GDK_STRNIL(*locale_str))
