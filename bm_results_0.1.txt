@@ -1,0 +1,89 @@
+LIKE
+clk:123.817 ms
+clk:102.248 ms
+clk:72.066 ms
+clk:110.946 ms
+clk:116.211 ms
+clk:101.453 ms
+clk:101.411 ms
+clk:102.220 ms
+clk:72.304 ms
+clk:101.395 ms
+ILIKE
+clk:1371.866 ms
+clk:1607.604 ms
+clk:1925.616 ms
+clk:1927.523 ms
+clk:1944.275 ms
+clk:1954.515 ms
+clk:1543.525 ms
+clk:3013.083 ms
+clk:2207.779 ms
+clk:2849.362 ms
+collationlike
+clk:51781.647 ms
+clk:52037.047 ms
+clk:53211.902 ms
+clk:52486.569 ms
+clk:52772.308 ms
+clk:50642.182 ms
+clk:53226.021 ms
+clk:53853.899 ms
+clk:52041.564 ms
+clk:52831.759 ms
+% sys.L3 # table_name
+% L3 # name
+% bigint # type
+% 7 # length
+[ 2318296	]
+% .trace,	.trace # table_name
+% usec,	statement # name
+% bigint,	clob # type
+% 8,	186 # length
+[ 133,	"X_3=0@0:void := querylog.define(\"trace select count(*) from orders where collationlike(o_comment, \\\\'%request%\\\\', \\\\'en_US\\\\');\":str, \"default_pipe\":str, 24:int);"	]
+[ 102,	"X_6=0:int := sql.mvc();"	]
+[ 162,	"X_131=<tmp_325>[1875000]:bat[:str] := sql.bind(X_6=0:int, \"sys\":str, \"orders\":str, \"o_comment\":str, 0:int, 0:int, 8:int);"	]
+[ 185,	"C_92=<tmp_636>[1875000]:bat[:oid] := sql.tid(X_6=0:int, \"sys\":str, \"orders\":str, 1:int, 8:int);"	]
+[ 222,	"C_94=<tmp_1347>[1875000]:bat[:oid] := sql.tid(X_6=0:int, \"sys\":str, \"orders\":str, 2:int, 8:int);"	]
+[ 238,	"X_133=<tmp_1346>[1875000]:bat[:str] := sql.bind(X_6=0:int, \"sys\":str, \"orders\":str, \"o_comment\":str, 0:int, 1:int, 8:int);"	]
+[ 199,	"X_137=<tmp_1325>[1875000]:bat[:str] := sql.bind(X_6=0:int, \"sys\":str, \"orders\":str, \"o_comment\":str, 0:int, 3:int, 8:int);"	]
+[ 149,	"X_145=<tmp_1326>[1875000]:bat[:str] := sql.bind(X_6=0:int, \"sys\":str, \"orders\":str, \"o_comment\":str, 0:int, 7:int, 8:int);"	]
+[ 137,	"C_102=<tmp_1315>[1875000]:bat[:oid] := sql.tid(X_6=0:int, \"sys\":str, \"orders\":str, 6:int, 8:int);"	]
+[ 147,	"X_143=<tmp_1327>[1875000]:bat[:str] := sql.bind(X_6=0:int, \"sys\":str, \"orders\":str, \"o_comment\":str, 0:int, 6:int, 8:int);"	]
+[ 174,	"X_141=<tmp_306>[1875000]:bat[:str] := sql.bind(X_6=0:int, \"sys\":str, \"orders\":str, \"o_comment\":str, 0:int, 5:int, 8:int);"	]
+[ 679,	"C_100=<tmp_524>[1875000]:bat[:oid] := sql.tid(X_6=0:int, \"sys\":str, \"orders\":str, 5:int, 8:int);"	]
+[ 372,	"C_98=<tmp_745>[1875000]:bat[:oid] := sql.tid(X_6=0:int, \"sys\":str, \"orders\":str, 4:int, 8:int);"	]
+[ 154,	"X_139=<tmp_522>[1875000]:bat[:str] := sql.bind(X_6=0:int, \"sys\":str, \"orders\":str, \"o_comment\":str, 0:int, 4:int, 8:int);"	]
+[ 142,	"C_96=<tmp_1361>[1875000]:bat[:oid] := sql.tid(X_6=0:int, \"sys\":str, \"orders\":str, 3:int, 8:int);"	]
+[ 186,	"X_135=<tmp_1362>[1875000]:bat[:str] := sql.bind(X_6=0:int, \"sys\":str, \"orders\":str, \"o_comment\":str, 0:int, 2:int, 8:int);"	]
+[ 55016386,	"X_165=<tmp_1341>[1875000]:bat[:bit] := batcollation.collationlike(X_133=<tmp_1346>[1875000]:bat[:str], \"%request%\":str, \"en_US\":str);"	]
+[ 9916,	"C_173=<tmp_1342>[289354]:bat[:oid] := algebra.thetaselect(X_165=<tmp_1341>[1875000]:bat[:bit], C_92=<tmp_636>[1875000]:bat[:oid], true:bit, \"==\":str);"	]
+[ 131,	"X_198=289354:lng := aggr.count(C_173=<tmp_1342>[289354]:bat[:oid]);"	]
+[ 228,	"C_90=<tmp_1342>[1875000]:bat[:oid] := sql.tid(X_6=0:int, \"sys\":str, \"orders\":str, 0:int, 8:int);"	]
+[ 55045418,	"X_164=<tmp_25>[1875000]:bat[:bit] := batcollation.collationlike(X_131=<tmp_325>[1875000]:bat[:str], \"%request%\":str, \"en_US\":str);"	]
+[ 6520,	"C_172=<tmp_761>[289398]:bat[:oid] := algebra.thetaselect(X_164=<tmp_25>[1875000]:bat[:bit], C_90=<tmp_1342>[1875000]:bat[:oid], true:bit, \"==\":str);"	]
+[ 126,	"X_197=289398:lng := aggr.count(C_172=<tmp_761>[289398]:bat[:oid]);"	]
+[ 55130640,	"X_169=<tmp_517>[1875000]:bat[:bit] := batcollation.collationlike(X_141=<tmp_306>[1875000]:bat[:str], \"%request%\":str, \"en_US\":str);"	]
+[ 8163,	"C_177=<tmp_513>[290300]:bat[:oid] := algebra.thetaselect(X_169=<tmp_517>[1875000]:bat[:bit], C_100=<tmp_524>[1875000]:bat[:oid], true:bit, \"==\":str);"	]
+[ 103,	"X_202=290300:lng := aggr.count(C_177=<tmp_513>[290300]:bat[:oid]);"	]
+[ 55176933,	"X_170=<tmp_1360>[1875000]:bat[:bit] := batcollation.collationlike(X_143=<tmp_1327>[1875000]:bat[:str], \"%request%\":str, \"en_US\":str);"	]
+[ 236,	"C_104=<tmp_636>[1875000]:bat[:oid] := sql.tid(X_6=0:int, \"sys\":str, \"orders\":str, 7:int, 8:int);"	]
+[ 6548,	"C_178=<tmp_1364>[290346]:bat[:oid] := algebra.thetaselect(X_170=<tmp_1360>[1875000]:bat[:bit], C_102=<tmp_1315>[1875000]:bat[:oid], true:bit, \"==\":str);"	]
+[ 87,	"X_203=290346:lng := aggr.count(C_178=<tmp_1364>[290346]:bat[:oid]);"	]
+[ 55220266,	"X_167=<tmp_1344>[1875000]:bat[:bit] := batcollation.collationlike(X_137=<tmp_1325>[1875000]:bat[:str], \"%request%\":str, \"en_US\":str);"	]
+[ 8093,	"C_175=<tmp_1334>[289266]:bat[:oid] := algebra.thetaselect(X_167=<tmp_1344>[1875000]:bat[:bit], C_96=<tmp_1361>[1875000]:bat[:oid], true:bit, \"==\":str);"	]
+[ 105,	"X_200=289266:lng := aggr.count(C_175=<tmp_1334>[289266]:bat[:oid]);"	]
+[ 55301625,	"X_168=<tmp_1332>[1875000]:bat[:bit] := batcollation.collationlike(X_139=<tmp_522>[1875000]:bat[:str], \"%request%\":str, \"en_US\":str);"	]
+[ 6096,	"C_176=<tmp_701>[290493]:bat[:oid] := algebra.thetaselect(X_168=<tmp_1332>[1875000]:bat[:bit], C_98=<tmp_745>[1875000]:bat[:oid], true:bit, \"==\":str);"	]
+[ 83,	"X_201=290493:lng := aggr.count(C_176=<tmp_701>[290493]:bat[:oid]);"	]
+[ 55318891,	"X_171=<tmp_1330>[1875000]:bat[:bit] := batcollation.collationlike(X_145=<tmp_1326>[1875000]:bat[:str], \"%request%\":str, \"en_US\":str);"	]
+[ 5851,	"C_179=<tmp_1365>[289209]:bat[:oid] := algebra.thetaselect(X_171=<tmp_1330>[1875000]:bat[:bit], C_104=<tmp_636>[1875000]:bat[:oid], true:bit, \"==\":str);"	]
+[ 70,	"X_204=289209:lng := aggr.count(C_179=<tmp_1365>[289209]:bat[:oid]);"	]
+[ 55338289,	"X_166=<tmp_1363>[1875000]:bat[:bit] := batcollation.collationlike(X_135=<tmp_1362>[1875000]:bat[:str], \"%request%\":str, \"en_US\":str);"	]
+[ 5807,	"C_174=<tmp_1366>[289930]:bat[:oid] := algebra.thetaselect(X_166=<tmp_1363>[1875000]:bat[:bit], C_94=<tmp_1347>[1875000]:bat[:oid], true:bit, \"==\":str);"	]
+[ 100,	"X_199=289930:lng := aggr.count(C_174=<tmp_1366>[289930]:bat[:oid]);"	]
+[ 137,	"X_196=<tmp_1366>[8]:bat[:lng] := mat.pack(X_197=289398:lng, X_198=289354:lng, X_199=289930:lng, X_200=289266:lng, X_201=290493:lng, X_202=290300:lng, X_203=290346:lng, X_204=289209:lng);"	]
+[ 58,	"X_205=<tmp_1366>[8]:bat[:lng] := algebra.selectNotNil(X_196=<tmp_1366>[8]:bat[:lng]);"	]
+[ 57,	"X_38=2318296:lng := aggr.sum(X_205=<tmp_1366>[8]:bat[:lng]);"	]
+[ 55349761,	"barrier X_215=false:bit := language.dataflow();"	]
+[ 161,	"sql.resultSet(\"sys.L3\":str, \"L3\":str, \"bigint\":str, 64:int, 0:int, 7:int, X_38=2318296:lng);"	]

@@ -1,2 +1,5 @@
 *.o
 *.so
+orders.tbl
+devdb/
+.vscode/
