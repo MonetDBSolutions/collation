@@ -26,118 +26,6 @@ select * from foo order by get_sort_key(s, 'en_US');
 select * from foo order by s;
 
 SELECT 'TESTS FOR collationlike';
-with strings as (select 'c%de' as pattern, 'cbde' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '\\_%\\%\\_' as pattern, '_a%_' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select 'FUSSBALL' as pattern, 'fußball' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select 'x' as pattern, 'fußball' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') from strings;
-
-with strings as (select 'fußball' as pattern, 'FUSSBALL' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select 'A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '_A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '__A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '_%A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%_A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '__%_A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '__%_A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%c%b' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%b_A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%b__A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select 'b___c' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '_' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '__' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%b_' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%b__' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%b____' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%b_%_' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '__ß____' as pattern, 'FUSSBALL' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '__ß%' as pattern, 'FUSSBALL' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select 'A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%A' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '_A%' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '__A__' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '_%A_%' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '__%_bc' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '\\_\\_\\_\\_' as pattern, 'xxxx' as target)
-    select target, pattern,  collationlike(target, pattern, 'de_DE') as matches from strings;
-
-with strings as (select '%A%' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
-with strings as (select '%A%' as pattern, 'bcäbc' as target)
-    select target, pattern,  collationlike(target, pattern, 'en_US_POSIX') as matches from strings;
-
-with strings as (select 'FUSSBALL' as pattern, 'fußball' as target)
-    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
-with strings as (select 'FUSSBALL' as pattern, 'fußball' as target)
-    select target, pattern,  collationlike(target, pattern, 'en_US_POSIX') as matches from strings;
-
 -- check if scalar and bulk versions are properly called
 explain with strings as (select 'FUSSBALL' as pattern, 'fußball' as target)
     select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
@@ -151,6 +39,8 @@ select s from foo where collationlike(s, 'mu%', 'en_US');
 with strings as (select 'FUSSBALL' as pattern, 'fußball' as target)
     select target, pattern as matches from strings where collationlike(target, pattern, 'en_US');
 
+--null and empty string corner cases
+
 select s from foo where s like null;
 
 select s from foo where collationlike(s, null, 'en_US');
@@ -158,29 +48,6 @@ select s from foo where collationlike(s, null, 'en_US');
 select s from foo where s like 'mu%';
 
 select s from foo where collationlike(null, 'mu%', 'en_US');
-
---null and empty string corner cases
-
-with strings as (select null as pattern, '' as target)
-    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
-
-with strings as (select '' as pattern, '' as target)
-    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
-
-with strings as (select '%' as pattern, '' as target)
-    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
-
-with strings as (select 'd' as pattern, '' as target)
-    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
-
-with strings as (select '' as pattern, 'd' as target)
-    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
-
-with strings as (select '%' as pattern, '' as target)
-    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
-
-with strings as (select '%_' as pattern, '' as target)
-    select target, pattern,  collationlike(target, pattern, 'en_US') as matches from strings;
 
 with strings as (select null as pattern)
     select strings.pattern, foo.s, collationlike(foo.s, strings.pattern, 'en_US') as match from strings, foo;
