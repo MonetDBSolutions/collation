@@ -416,8 +416,6 @@ void literal_finalize(state_t* state) {
 
     increment_searchcriterium_list(state);
 
-    append_character(state, &state->current->search_string, '\0');
-
     assert(state->current->start == 0);
     state->current->card = EQUAL;
 }
