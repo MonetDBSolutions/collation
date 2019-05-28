@@ -26,16 +26,8 @@
 extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **u_target, const char **pattern, const char** locale_id);
 extern __declspec(dllexport) char *UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char **locale_str);
 
-static char* first_search(UStringSearch** search, int offset, const char* pattern, const UChar* u_target, UCollator* col) {
+static char* first_search(UStringSearch** search, int offset, const UChar* u_pattern, const UChar* u_target, UCollator* col) {
 	UErrorCode status = U_ZERO_ERROR;
-
-	size_t pattern_capacity = strlen(pattern) + 1;
-	UChar u_pattern[pattern_capacity];
-	u_strFromUTF8Lenient(u_pattern, pattern_capacity, NULL, pattern, -1, &status);
-
-	if (!U_SUCCESS(status)){
-		throw(MAL, "collation.collationlike", "Could not transform pattern string from utf-8 to utf-16.");
-	}
 
 	*search = usearch_openFromCollator(u_pattern, -1, u_target, -1, col, NULL, &status);
 
@@ -74,7 +66,7 @@ static char* likematch_recursive(bit* found, searchcriterium_t* current, int off
 	*found = false;
 
 	if (current->search_string.nbytes > 1 /*non-empty string*/) {
-		if ( (return_status = first_search(&search, offset, current->search_string.data, target, coll)) ) {
+		if ( (return_status = first_search(&search, offset, current->search_string_16.data, target, coll)) ) {
 			return return_status;
 		}
 	}

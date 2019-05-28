@@ -78,6 +78,7 @@ static searchcriterium_t* create_searchcriterium() {
 
     first->start = 0;
     first->search_string.data = (char*) GDKmalloc(INIT_BUFFER_SIZE * sizeof(char));
+    first->search_string_16.data = NULL;
     first->search_string.capacity = INIT_BUFFER_SIZE;
     first->search_string.nbytes = 0;
     first->next = NULL;
@@ -177,6 +178,28 @@ static void append_character(state_t* state, search_string_t* buffer, const char
 
     buffer->data[buffer->nbytes++] = character;
 }
+
+static void compile_from_utf_8_to_utf_16(state_t* state, search_string_t* source, search_string_utf_16_t* destination) {
+    UErrorCode status = U_ZERO_ERROR;
+
+    destination->ncharacters = source->nbytes;
+
+	destination->data = (UChar*) GDKmalloc(2 /*double just to be sure*/ * destination->ncharacters * sizeof(UChar));
+
+	u_strFromUTF8Lenient(destination->data, destination->ncharacters, NULL, source->data, source->nbytes, &status);
+
+	if (!U_SUCCESS(status)){
+		state->error_string = createException(MAL, "collation.collationlike", "Could not transform pattern string from utf-8 to utf-16.");
+	}
+}
+
+static void terminate_current_string(state_t* state) {
+    append_character(state, &state->current->search_string, '\0');
+    if (state->error_string) return;
+
+    compile_from_utf_8_to_utf_16(state, &state->current->search_string, &state->current->search_string_16);
+}
+
 
 void initial_handle_percentage(state_t* state, const char character) {
     (void) character;
@@ -307,7 +330,7 @@ void sc_wildcard_handle_normal_character(state_t* state, const char character) {
 
 void wildcard_finalize(state_t* state) {
 
-    append_character(state, &state->current->search_string, '\0');
+    terminate_current_string(state);
 }
 
 #define CHECK_ESCAPE_STATE(state) ({\
@@ -363,10 +386,11 @@ static void increment_searchcriterium_list(state_t* state) {
 
     /*
      * We have reached the end of the current searchcriterium.
-     * So we finalize the current one with a null terminator and create a new searchcriterium.
+     * So we finalize the current one and create a new searchcriterium.
      * Append new searchcriterium to linked list and update state's current accordingly.
      */
-    append_character(state, &state->current->search_string, '\0');
+    terminate_current_string(state);
+    if (state->error_string) return;
 
     new = create_searchcriterium();
 
@@ -487,6 +511,7 @@ void destroy_searchcriteria(searchcriterium_t* searchcriteria) {
         next = searchcriteria->next;
 
         GDKfree(searchcriteria->search_string.data);
+        GDKfree(searchcriteria->search_string_16.data);
         GDKfree(searchcriteria);
 
         searchcriteria = next;

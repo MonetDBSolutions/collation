@@ -6,6 +6,8 @@
  */
 
 #include <monetdb_config.h>
+#include <unicode/ustring.h>
+
 
 typedef enum cardinality {
     GREATER_OR_EQUAL,
@@ -18,10 +20,17 @@ typedef struct {
     size_t nbytes;
 } search_string_t;
 
+typedef struct {
+    UChar* data;
+    size_t ncharacters;
+} search_string_utf_16_t;
+
 typedef struct _searchcriterium_t {
     int start;
     cardinality_t card;
     search_string_t search_string;
+    search_string_utf_16_t search_string_16;
+
     struct _searchcriterium_t* next;
 } searchcriterium_t;
 
