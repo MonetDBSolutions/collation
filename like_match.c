@@ -23,6 +23,8 @@
 // TODO: turn collationlike in a true filter function, i.e. implement collationlikeselect and collationlikejoin.
 // TODO: Clean up code base a bit.
 
+#define INITIAL_BUFFER_CAPACITY 64
+
 extern __declspec(dllexport) char *UDFlikematch(bit* result, const char **u_target, const char **pattern, const char** locale_id);
 extern __declspec(dllexport) char *UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char **locale_str);
 
@@ -116,29 +118,14 @@ static char* likematch_recursive(bit* found, searchcriterium_t* current, int off
 	return MAL_SUCCEED;
 }
 
-static char * likematch(bit* result, searchcriterium_t* head, const char** target, UCollator* coll) {
-	UErrorCode status = U_ZERO_ERROR;
+static char * likematch(bit* result, searchcriterium_t* head, const UChar* u_target, int nunits, UCollator* coll) {
 	char* return_status;
-
-	if (GDK_STRNIL(*target)) { // nil input implies false result.
-		*result = false;
-		return MAL_SUCCEED;
-	}
 
 	/* unfortunately ICU cannot handle empty target strings,
 	 * hence we have to check this ourselves.*/
-	if (!strlen(*target)) {
+	if (!u_strlen(u_target)) {
 		*result = (head->card == GREATER_OR_EQUAL && head->start == 0);
 		return  MAL_SUCCEED;
-	}
-
-	size_t target_capacity = strlen(*target) + 1;
-	UChar u_target[target_capacity];
-	int nunits;
-	u_strFromUTF8Lenient(u_target, target_capacity, &nunits, *target, -1, &status);
-
-	if (!U_SUCCESS(status)){
-		throw(MAL, "collation.collationlike", "Could not transform target string from utf-8 to utf-16.");
 	}
 
 	return_status = likematch_recursive(result, head, 0, u_target, nunits, coll);
@@ -151,9 +138,10 @@ UDFlikematch(bit* result, const char** target, const char** pattern, const char*
 	UErrorCode status = U_ZERO_ERROR;
 	char* return_status;
 	UCollator* coll;
+
 	searchcriterium_t* head;
 
-	if (GDK_STRNIL(*pattern)) { // nil pattern implies false result.
+	if (GDK_STRNIL(*pattern) || GDK_STRNIL(*target)) { // nil pattern implies false result.
 		*result = false;
 		return MAL_SUCCEED;
 	}
@@ -176,7 +164,16 @@ UDFlikematch(bit* result, const char** target, const char** pattern, const char*
 
 	ucol_setStrength(coll, UCOL_PRIMARY);
 
-	return_status = likematch(result, head, target, coll);
+	size_t target_capacity = 2 * (strlen(*target) + 1);
+	UChar u_target[target_capacity];
+	int nunits;
+	u_strFromUTF8Lenient(u_target, target_capacity, &nunits, *target, -1, &status);
+
+	if (!U_SUCCESS(status)){
+		throw(MAL, "collation.collationlike", "Could not transform target string from utf-8 to utf-16.");
+	}
+
+	return_status = likematch(result, head, u_target, nunits, coll);
 
 	destroy_searchcriteria(head);
 
@@ -187,10 +184,13 @@ char *
 UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char **locale_str) {
 	UErrorCode status = U_ZERO_ERROR;
 	BAT *target_bat, *result_bat;
+	UChar* u_target;
+	int nunits;
+	size_t target_capacity;
 	BATiter bi;
 	bit *result_iter;
 	BUN p, q;
-	const char *source;
+	const char *target_element;
 	UCollator* coll;
 	char* return_status;
 	searchcriterium_t* head;
@@ -210,9 +210,9 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 		bi = bat_iterator(target_bat);
 
 		BATloop(target_bat, p, q) {
-			source = (const char *) BUNtail(bi, p);
+			target_element = (const char *) BUNtail(bi, p);
 
-			*result_iter = !GDK_STRNIL(source) && !strlen(source);
+			*result_iter = !GDK_STRNIL(target_element) && !strlen(target_element);
 			result_iter++;
 		}
 	}
@@ -238,15 +238,43 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
 
 		bi = bat_iterator(target_bat);
 
-		BATloop(target_bat, p, q) {
-			source = (const char *) BUNtail(bi, p);
+		target_capacity = INITIAL_BUFFER_CAPACITY;
+		if ( (u_target = GDKmalloc(target_capacity  * sizeof(UChar))) == NULL ) {
+			goto bailout;
+		}
 
-			if (GDK_STRNIL(source)) { // nil source implies false result.
+		// instatiate utf-16 buffer target_buffer, target_size, capacity
+
+		BATloop(target_bat, p, q) {
+			target_element = (const char *) BUNtail(bi, p);
+
+			if (GDK_STRNIL(target_element)) { // nil target_element implies false result.
 				*result_iter = false;
 				result_iter++;
 			}
-			else if ( (return_status = likematch(result_iter++, head, &source, coll)) ) {
-				goto bailout;
+			else {
+				u_strFromUTF8Lenient(u_target, target_capacity, &nunits, target_element, -1, &status);
+
+				if (status == U_BUFFER_OVERFLOW_ERROR) {
+					target_capacity += nunits;
+
+					if ( ( u_target = GDKrealloc(u_target, target_capacity * sizeof(UChar)) ) == NULL ) {
+						goto bailout;
+					}
+
+					status = U_ZERO_ERROR;
+					u_strFromUTF8Lenient(u_target, target_capacity, &nunits, target_element, -1, &status);
+				}
+
+				if (!U_SUCCESS(status)){
+					destroy_searchcriteria(head);
+					BBPunfix(result_bat->batCacheid);
+					throw(MAL, "collation.collationlike", "Could not transform target string from utf-8 to utf-16.");
+				}
+				
+				if ( (return_status = likematch(result_iter++, head, u_target, nunits, coll)) ) {
+					goto bailout;
+				}
 			}
 		}
 
@@ -279,5 +307,5 @@ UDFBATlikematch(bat* result, const bat *target, const char** pattern, const char
   bailout:
 	destroy_searchcriteria(head);
 	BBPunfix(result_bat->batCacheid);
-	throw(MAL, "collation.get_locales", MAL_MALLOC_FAIL);
+	throw(MAL, "collation.collationlike", MAL_MALLOC_FAIL);
 }
