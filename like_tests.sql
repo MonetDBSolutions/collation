@@ -130,8 +130,11 @@ with strings as (select '' as pattern, 'd' as target, 'en_US' as locale), matche
 with strings as (select '%_' as pattern, '' as target, 'en_US' as locale), matches as (select collationlike(target, pattern, locale) as match from strings)
     insert into tests select target, pattern, locale, match, (match = false) as correct from strings, matches;
 
-with strings as (select '%_' as pattern, '' as target, 'en_US' as locale), matches as (select collationlike(target, pattern, locale) as match from strings)
+with strings as (select '%x' as pattern, '' as target, 'en_US' as locale), matches as (select collationlike(target, pattern, locale) as match from strings)
     insert into tests select target, pattern, locale, match, (match = false) as correct from strings, matches;
+
+with strings as (select '' as pattern, '' as target, 'en_US' as locale), matches as (select collationlike(target, pattern, locale) as match from strings)
+    insert into tests select target, pattern, locale, match, (match = true) as correct from strings, matches;
 
 select * from tests;
 

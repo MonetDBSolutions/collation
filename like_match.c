@@ -124,7 +124,7 @@ static char * likematch(bit* result, searchcriterium_t* head, const UChar* u_tar
 	/* unfortunately ICU cannot handle empty target strings,
 	 * hence we have to check this ourselves.*/
 	if (!u_strlen(u_target)) {
-		*result = (head->card == GREATER_OR_EQUAL && head->start == 0);
+		*result = (head->card == GREATER_OR_EQUAL && head->start == 0 && head->next == NULL);
 		return  MAL_SUCCEED;
 	}
 
