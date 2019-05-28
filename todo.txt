@@ -8,8 +8,6 @@ Check if ICU thread safe is
 
 implementatie verbeteringen
 
-gebruik string buffer in bat loop om utf8 naar utf 16 te vertalen. geldt voor zowel pattern als target.
-
 hergebruik search objecten van icu
 
 Recursieve functie calls vervangen met iteratie
