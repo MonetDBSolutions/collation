@@ -72,7 +72,10 @@ const size_t INIT_BUFFER_SIZE = 128;
 static searchcriterium_t* create_searchcriterium() {
     searchcriterium_t* first;
 
-    first = (searchcriterium_t*) GDKmalloc(sizeof(searchcriterium_t)); // TODO: Check for malloc failure?
+    if ( (first = (searchcriterium_t*) GDKmalloc(sizeof(searchcriterium_t)) ) == NULL)  {
+        return NULL;
+    }
+
     first->start = 0;
     first->search_string.data = (char*) GDKmalloc(INIT_BUFFER_SIZE * sizeof(char));
     first->search_string.capacity = INIT_BUFFER_SIZE;
@@ -86,6 +89,11 @@ static void set_initial_state(state_t* state, char esc_char) {
     searchcriterium_t* first;
 
     first = create_searchcriterium();
+
+    if (first == NULL) {
+        state->error_string = createException(MAL, "collation.dfa", MAL_MALLOC_FAIL);
+        return;
+    }
 
     state->esc_char = esc_char;
     state->current = first;
@@ -361,6 +369,12 @@ static void increment_searchcriterium_list(state_t* state) {
     append_character(state, &state->current->search_string, '\0');
 
     new = create_searchcriterium();
+
+    if (new == NULL) {
+        state->error_string = createException(MAL, "collation.dfa", MAL_MALLOC_FAIL);
+        return;
+    }
+
     state->current->next = new;
     state->current = new;
 }
@@ -371,6 +385,7 @@ void literal_handle_percentage(state_t* state, const char character) {
     CHECK_LITERAL_STATE(state);
 
     increment_searchcriterium_list(state);
+    if (state->error_string) return;
 
     assert(state->current->start == 0);
     state->current->card = GREATER_OR_EQUAL;
@@ -384,6 +399,7 @@ void literal_handle_underscore(state_t* state, const char character) {
     CHECK_LITERAL_STATE(state);
 
     increment_searchcriterium_list(state);
+    if (state->error_string) return;
 
     assert(state->current->start == 0);
     state->current->card = EQUAL;
@@ -415,6 +431,7 @@ void literal_handle_normal_character(state_t* state, const char character) {
 void literal_finalize(state_t* state) {
 
     increment_searchcriterium_list(state);
+    if (state->error_string) return;
 
     assert(state->current->start == 0);
     state->current->card = EQUAL;
