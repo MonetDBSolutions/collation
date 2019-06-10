@@ -17,6 +17,10 @@ command get_locales():bat[:str]
 address UDFlocales
 comment "List available locales from which a collator can be derived.";
 
+command to_re(input:str):str
+address UDFpattern2re
+comment "Transform a utf8 sql LIKE pattern into a pcre case insensitive regular expression.";
+
 module batcollation;
 command collationlike(input:bat[:str], pattern:str, locale:str):bat[:bit]
 address UDFBATlikematch
