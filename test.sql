@@ -6,6 +6,7 @@ insert into foo values
     ('Mvller'),
     ('Müller'),
     ('müller'),
+    ('muller'),
     ('Houße'),
     ('Muller'),
     ('Housse'),
@@ -19,9 +20,10 @@ SELECT 'TESTS FOR get_sort_key';
 explain select get_sort_key('asdsad', 'en_US');
 
 explain select get_sort_key(s, 'en_US') from foo;
-select get_sort_key(s, 'en_US') from foo;
+select s, get_sort_key(s, 'en_US') from foo where collationlike(s, 'mu%', 'en_US');
 
 select * from foo order by get_sort_key(s, 'en_US');
+
 
 select * from foo order by s;
 
@@ -64,6 +66,11 @@ with strings as (select '%_' as pattern)
 with strings as (select 'mu%' as pattern)
     select strings.pattern, foo.s, collationlike(foo.s, strings.pattern, 'en_US') as match from strings, foo;
 
+
+select s, get_sort_key(s, 'en_US') from foo where collationlike(s, 'mu%', 'en_US');
+
+select s, get_sort_key(s, 'en_US') from foo where collationlike(s, '%ss%', 'en_US');
+
 ROLLBACK;
 
 select 'TESTING TABLE PRODUCING FUNCTION locales().';
@@ -86,7 +93,9 @@ insert into foo values
     ('Fußball'),
     ('_VERY_LONG_STRING_ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß');
 select get_sort_key(s, null) from foo;
+
 ROLLBACK;
+
 
 select 'TESTING NON-ESCAPABLE CHARACTER 1 FOR collationlike';
 with strings as (select '\\x' as pattern, 'xxxx' as target)
