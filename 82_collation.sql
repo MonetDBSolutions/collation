@@ -15,3 +15,6 @@ CREATE FUNCTION locales() RETURNS TABLE (locale STRING)
 
 CREATE FUNCTION to_re(pattern STRING) RETURNS STRING
     EXTERNAL NAME collation.to_re;
+
+CREATE FUNCTION get_ai_sort_key(input STRING) RETURNS STRING
+    EXTERNAL NAME collation.to_normalized;

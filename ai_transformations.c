@@ -10,6 +10,7 @@
 
 
 extern __declspec(dllexport) char *UDFpattern2re(char ** result, const char **input);
+extern __declspec(dllexport) char *UDFpattern2normalized(char ** result, const char **input);
 
 //#define A_CLASS "a"
 #define A_CLASS "[A\\x{00C0}\\x{00C1}\\x{00C2}\\x{00C3}\\x{00C4}\\x{00C5}\\x{0100}\\x{0102}\\x{0104}\\x{01CD}\\x{01DE}\\x{01E0}\\x{01FA}\\x{0200}\\x{0202}\\x{0226}\\x{023A}\\x{1E00}\\x{1EA0}\\x{1EA2}\\x{1EA4}\\x{1EA6}\\x{1EA8}\\x{1EAA}\\x{1EAC}\\x{1EAE}\\x{1EB0}\\x{1EB2}\\x{1EB4}\\x{1EB6}a\\x{00E0}\\x{00E1}\\x{00E2}\\x{00E3}\\x{00E4}\\x{00E5}\\x{0101}\\x{0103}\\x{0105}\\x{01CE}\\x{01DF}\\x{01E1}\\x{01FB}\\x{0201}\\x{0203}\\x{0227}\\x{1D8F}\\x{1E01}\\x{1E9A}\\x{1EA1}\\x{1EA3}\\x{1EA5}\\x{1EA7}\\x{1EA9}\\x{1EAB}\\x{1EAD}\\x{1EAF}\\x{1EB1}\\x{1EB3}\\x{1EB5}\\x{1EB7}\\x{2C65}\\x{AB31}][\\x{0300}-\\x{036F}]*"
@@ -53,9 +54,9 @@ typedef struct _character_class_t {
 
 #define init_character_class(symbol, replacement) {symbol, replacement, strlen(replacement)}
 
-#define nsymbols 28 // Latin alphabet plus the two wildcards. 
+#define nregexes 28 // Latin alphabet plus the two wildcards.
 
-static const character_class_t CLASSES[nsymbols] = {
+static const character_class_t CLASSES[nregexes] = {
     init_character_class(MULTI_WILDCARD_CLASS, MULTI_WILDCARD_REPLACEMENT),
     init_character_class(SINGLE_WILDCARD_CLASS, SINGLE_WILDCARD_REPLACEMENT),
     init_character_class(A_CLASS, A_CLASS),
@@ -86,6 +87,39 @@ static const character_class_t CLASSES[nsymbols] = {
     init_character_class(Z_CLASS, Z_CLASS)
 };
 
+#define nnormalizedletters 26 // Just the Latin alphabet.
+
+static const character_class_t NORMALIZED[nnormalizedletters] = {
+    init_character_class(A_CLASS, "a"),
+    init_character_class(B_CLASS, "b"),
+    init_character_class(C_CLASS, "c"),
+    init_character_class(D_CLASS, "d"),
+    init_character_class(E_CLASS, "e"),
+    init_character_class(F_CLASS, "f"),
+    init_character_class(G_CLASS, "g"),
+    init_character_class(H_CLASS, "h"),
+    init_character_class(I_CLASS, "i"),
+    init_character_class(J_CLASS, "j"),
+    init_character_class(K_CLASS, "k"),
+    init_character_class(L_CLASS, "l"),
+    init_character_class(M_CLASS, "m"),
+    init_character_class(N_CLASS, "n"),
+    init_character_class(O_CLASS, "o"),
+    init_character_class(P_CLASS, "p"),
+    init_character_class(Q_CLASS, "q"),
+    init_character_class(R_CLASS, "r"),
+    init_character_class(S_CLASS, "s"),
+    init_character_class(T_CLASS, "t"),
+    init_character_class(U_CLASS, "u"),
+    init_character_class(V_CLASS, "v"),
+    init_character_class(W_CLASS, "w"),
+    init_character_class(X_CLASS, "x"),
+    init_character_class(Y_CLASS, "y"),
+    init_character_class(Z_CLASS, "z")
+};
+
+#define ovector_length 3
+
 typedef struct merge_element_t merge_element_t;
 
 struct merge_element_t {
@@ -101,25 +135,22 @@ static inline void merge_array_insert(merge_element_t* merge_array, int* delta, 
     *delta += (class->replacement_length - size);
 }
 
-void like_pattern2pcre_pattern(char** transformed_pat, const char* pat) {
+static void like_pattern2pcre_pattern(
+    char** result_cursor,
+    const char* pat,
+    const character_class_t* classes, int nclasses,
+    merge_element_t* merge_array, int pat_length) {
     (void) pat;
     int delta = 0; // Counts the increase in bytes of the transformed pattern w.r.t. the original pattern
     const char* err = NULL;
     int erroffset;
 
-    pcre* compiled_patterns[nsymbols];
+    pcre* compiled_patterns[nclasses];
 
-    int pat_length =  strlen(pat);
+    int ovector[ovector_length];
 
-    // TODO: perform clean up
-    int ovector_length = 3;
-    int* ovector = GDKmalloc(ovector_length * sizeof(int));
-
-    // TODO: perform clean up
-    merge_element_t* merge_array = (merge_element_t*) GDKzalloc(pat_length * sizeof(merge_element_t));
-
-    for (int i = 0; i < nsymbols; i ++) {
-        const character_class_t* class = &CLASSES[i];
+    for (int i = 0; i < nclasses; i ++) {
+        const character_class_t* class = &classes[i];
 
         // TODO Do all of this stuff in a mall prelude
         int options = PCRE_UTF8 | PCRE_MULTILINE | PCRE_DOTALL;
@@ -144,37 +175,69 @@ void like_pattern2pcre_pattern(char** transformed_pat, const char* pat) {
         // TODO handle pos < -1 aka errors
     }
 
-    int normalized_pat_length = pat_length + delta + 1;
-
-    // TODO: perform clean up
-    *transformed_pat = GDKzalloc(1 /*for '^' start of string*/ + normalized_pat_length + 1 /*for '$' end of string*/);
-    char* cursor = *transformed_pat;
-    *cursor++ = '^'; // match start of string.
-
-
     for (int i = 0; i < pat_length;) {
         merge_element_t* merge_element = &merge_array[i];
 
         if (merge_element->size) {
 
-            strncpy(cursor, merge_element->class->replacement, merge_element->class->replacement_length);
-            cursor += merge_element->class->replacement_length;
+            strncpy(*result_cursor, merge_element->class->replacement, merge_element->class->replacement_length);
+            *result_cursor += merge_element->class->replacement_length;
             i+=merge_element->size;
 
             continue;
         }
 
-        *cursor++ = *(pat + i++); // Just copy the current byte
+        *(*result_cursor)++ = *(pat + i++); // Just copy the current byte
     }
 
-    *cursor++ = '$'; // match end of string.
-
-    *cursor = 0; // Finalize transformed_pat with null terminator
+    **result_cursor = 0; // Finalize transformed_pat with null terminator
 }
 
 char *UDFpattern2re(char ** result, const char **input) {
+
+    int pat_length =  strlen(*input);
+
+    // TODO: check for allocation errors.
+    merge_element_t* merge_array = (merge_element_t*) GDKzalloc(pat_length * sizeof(merge_element_t));
+
+    int buffer_size = strlen(O_CLASS) * (pat_length + 2) +1;
+
+    // TODO: check for allocation errors.
+    *result = GDKzalloc(buffer_size);
+
+    char* cursor = *result;
+    *cursor++ = '^'; // match start of string.
+
     // TODO error handling
-    like_pattern2pcre_pattern(result, *input);
+    like_pattern2pcre_pattern(&cursor, *input, CLASSES, nregexes, merge_array, pat_length);
+
+    *cursor++ = '$'; // Overwrite null terminator and match end of string.
+
+    *cursor = 0; // Finalize transformed_pat with null terminator.
+
+    GDKfree(merge_array);
+
+	return MAL_SUCCEED;
+}
+
+char *UDFpattern2normalized(char ** result, const char **input) {
+
+    int pat_length =  strlen(*input);
+
+    // TODO: check for allocation errors.
+    merge_element_t* merge_array = (merge_element_t*) GDKzalloc(pat_length * sizeof(merge_element_t));
+
+    int buffer_size = pat_length + 1;
+
+    // TODO: check for allocation errors.
+    *result = GDKzalloc(buffer_size);
+
+    char* cursor = *result;
+
+    // TODO error handling
+    like_pattern2pcre_pattern(&cursor, *input, NORMALIZED, nnormalizedletters, merge_array, pat_length);
+
+    GDKfree(merge_array);
 
 	return MAL_SUCCEED;
 }

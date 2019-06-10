@@ -21,6 +21,10 @@ command to_re(input:str):str
 address UDFpattern2re
 comment "Transform a utf8 sql LIKE pattern into a pcre case insensitive regular expression.";
 
+command to_normalized(input:str):str
+address UDFpattern2normalized
+comment "Normalizes a utf8 string by transforming letters from upper to lower cases and removing any additional accents.";
+
 module batcollation;
 command collationlike(input:bat[:str], pattern:str, locale:str):bat[:bit]
 address UDFBATlikematch
