@@ -12,6 +12,7 @@
 
 extern __declspec(dllexport) char *UDFpattern2re(char ** result, const char **input);
 extern __declspec(dllexport) char *UDFpattern2normalized(char ** result, const char **input);
+extern __declspec(dllexport) char *UDFBATpattern2normalized(bat *result, const bat *input);
 
 //#define A_CLASS "a"
 #define A_CLASS "[A\\x{00C0}\\x{00C1}\\x{00C2}\\x{00C3}\\x{00C4}\\x{00C5}\\x{0100}\\x{0102}\\x{0104}\\x{01CD}\\x{01DE}\\x{01E0}\\x{01FA}\\x{0200}\\x{0202}\\x{0226}\\x{023A}\\x{1E00}\\x{1EA0}\\x{1EA2}\\x{1EA4}\\x{1EA6}\\x{1EA8}\\x{1EAA}\\x{1EAC}\\x{1EAE}\\x{1EB0}\\x{1EB2}\\x{1EB4}\\x{1EB6}a\\x{00E0}\\x{00E1}\\x{00E2}\\x{00E3}\\x{00E4}\\x{00E5}\\x{0101}\\x{0103}\\x{0105}\\x{01CE}\\x{01DF}\\x{01E1}\\x{01FB}\\x{0201}\\x{0203}\\x{0227}\\x{1D8F}\\x{1E01}\\x{1E9A}\\x{1EA1}\\x{1EA3}\\x{1EA5}\\x{1EA7}\\x{1EA9}\\x{1EAB}\\x{1EAD}\\x{1EAF}\\x{1EB1}\\x{1EB3}\\x{1EB5}\\x{1EB7}\\x{2C65}\\x{AB31}][\\x{0300}-\\x{036F}]*"
@@ -255,6 +256,78 @@ char *UDFpattern2normalized(char ** result, const char **input) {
     like_pattern2pcre_pattern(&cursor, *input, NORMALIZED, nnormalizedletters, merge_array, pat_length);
 
     GDKfree(merge_array);
+
+	return MAL_SUCCEED;
+}
+
+char *
+UDFBATpattern2normalized(bat *result, const bat *input) {
+	BAT *input_bat, *result_bat;
+	BATiter bi;
+	BUN p, q;
+
+	input_bat = BATdescriptor(*input);
+	if (input_bat == NULL) {
+		throw(MAL, "collation.pattern2normalized", RUNTIME_OBJECT_MISSING);
+	}
+
+	assert(input_bat->ttype == TYPE_str);
+
+	result_bat = COLnew(input_bat->hseqbase, TYPE_str, BATcount(input_bat), TRANSIENT);
+	if (result_bat == NULL) {
+		BBPunfix(input_bat->batCacheid);
+		throw(MAL, "collation.pattern2normalized", MAL_MALLOC_FAIL);
+	}
+
+    int pat_length = 4;
+
+    // TODO: check for allocation errors.
+    merge_element_t* merge_array = (merge_element_t*) GDKmalloc(pat_length * sizeof(merge_element_t));
+
+    // TODO: check for allocation errors.
+    char* result_val = GDKmalloc(pat_length + 1);
+
+	bi = bat_iterator(input_bat);
+	BATloop(input_bat, p, q) {
+		const char *source = (const char *) BUNtail(bi, p);
+
+		if (GDK_STRNIL(source)) {
+            if (BUNappend(result_bat, str_nil, false) != GDK_SUCCEED) {
+                // TODO error handling
+            }
+
+            continue;
+		}
+
+        const int source_length = strlen(source);
+
+		if (source_length >= pat_length) {
+
+            pat_length = source_length;
+
+            merge_array = GDKrealloc(merge_array, pat_length * sizeof(merge_element_t));
+
+            result_val = GDKrealloc(result_val, pat_length + 1);
+		}
+
+        memset(merge_array, 0, pat_length * sizeof(merge_element_t));
+
+        char* cursor = result_val;
+
+        // TODO error handling
+        like_pattern2pcre_pattern(&cursor, source, NORMALIZED, nnormalizedletters, merge_array, source_length);
+
+		if (BUNappend(result_bat, result_val, false) != GDK_SUCCEED) {
+			// TODO error handling
+		}
+	}
+
+	GDKfree(merge_array);
+    GDKfree(result_val);
+	BBPunfix(input_bat->batCacheid);
+
+	*result = result_bat->batCacheid;
+	BBPkeepref(result_bat->batCacheid);
 
 	return MAL_SUCCEED;
 }
