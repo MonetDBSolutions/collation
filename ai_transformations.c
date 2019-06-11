@@ -9,9 +9,9 @@
 /* we use the PCRE library to do regular expression matching */
 #include <pcre.h>
 
-extern __declspec(dllexport) char *UDFpattern2re(char ** result, const char **input);
-extern __declspec(dllexport) char *UDFpattern2normalized(char ** result, const char **input);
-extern __declspec(dllexport) char *UDFBATpattern2normalized(bat *result, const bat *input);
+extern __declspec(dllexport) char *UDFget_re(char ** result, const char **input);
+extern __declspec(dllexport) char *UDFnormalize(char ** result, const char **input);
+extern __declspec(dllexport) char *UDFBATnormalize(bat *result, const bat *input);
 
 #define A_CLASS "[A\\x{00C0}\\x{00C1}\\x{00C2}\\x{00C3}\\x{00C4}\\x{00C5}\\x{0100}\\x{0102}\\x{0104}\\x{01CD}\\x{01DE}\\x{01E0}\\x{01FA}\\x{0200}\\x{0202}\\x{0226}\\x{023A}\\x{1E00}\\x{1EA0}\\x{1EA2}\\x{1EA4}\\x{1EA6}\\x{1EA8}\\x{1EAA}\\x{1EAC}\\x{1EAE}\\x{1EB0}\\x{1EB2}\\x{1EB4}\\x{1EB6}a\\x{00E0}\\x{00E1}\\x{00E2}\\x{00E3}\\x{00E4}\\x{00E5}\\x{0101}\\x{0103}\\x{0105}\\x{01CE}\\x{01DF}\\x{01E1}\\x{01FB}\\x{0201}\\x{0203}\\x{0227}\\x{1D8F}\\x{1E01}\\x{1E9A}\\x{1EA1}\\x{1EA3}\\x{1EA5}\\x{1EA7}\\x{1EA9}\\x{1EAB}\\x{1EAD}\\x{1EAF}\\x{1EB1}\\x{1EB3}\\x{1EB5}\\x{1EB7}\\x{2C65}\\x{AB31}][\\x{0300}-\\x{036F}]*"
 #define B_CLASS "[b\\x{0180}\\x{0183}\\x{0253}\\x{1D6C}\\x{1D80}\\x{1E03}\\x{1E05}\\x{1E07}\\x{A797}B\\x{0181}\\x{0182}\\x{0243}\\x{1E02}\\x{1E04}\\x{1E06}\\x{A796}][\\x{0300}-\\x{036F}]*"
@@ -54,9 +54,9 @@ typedef struct _character_class_t {
 
 #define init_character_class(symbol, replacement) {symbol, replacement, strlen(replacement)}
 
-#define nregexes 28 // Latin alphabet plus the two wildcards.
+#define NREG_EXPRS 28 // Latin alphabet plus the two wildcards.
 
-static const character_class_t CLASSES[nregexes] = {
+static const character_class_t REG_EXPRS[NREG_EXPRS] = {
     init_character_class(MULTI_WILDCARD_CLASS, MULTI_WILDCARD_REPLACEMENT),
     init_character_class(SINGLE_WILDCARD_CLASS, SINGLE_WILDCARD_REPLACEMENT),
     init_character_class(A_CLASS, A_CLASS),
@@ -87,9 +87,9 @@ static const character_class_t CLASSES[nregexes] = {
     init_character_class(Z_CLASS, Z_CLASS)
 };
 
-#define nnormalizedletters 26 // Just the Latin alphabet.
+#define NNORM_EXPRS 26 // Just the Latin alphabet.
 
-static const character_class_t NORMALIZED[nnormalizedletters] = {
+static const character_class_t NORM_EXPRS[NNORM_EXPRS] = {
     init_character_class(A_CLASS, "a"),
     init_character_class(B_CLASS, "b"),
     init_character_class(C_CLASS, "c"),
@@ -135,12 +135,11 @@ static inline void merge_array_insert(merge_element_t* merge_array, int* delta, 
     *delta += (class->replacement_length - size);
 }
 
-static void like_pattern2pcre_pattern(
+static void ai_transform(
     char** result_cursor,
-    const char* pat,
+    const char* input,
     const character_class_t* classes, int nclasses,
-    merge_element_t* merge_array, int pat_length) {
-    (void) pat;
+    merge_element_t* merge_array, int input_length) {
     int delta = 0; // Counts the increase in bytes of the transformed pattern w.r.t. the original pattern
     const char* err = NULL;
     int erroffset;
@@ -157,6 +156,7 @@ static void like_pattern2pcre_pattern(
         compiled_patterns[i] = pcre_compile(class->match, options, &err, &erroffset, NULL);
 
         if (err) {
+            // TODO error handling
             printf("%s\n", err);
         }
 
@@ -164,7 +164,7 @@ static void like_pattern2pcre_pattern(
         int begin = 0;
         int end   = 0;
 
-        while ( (pos = pcre_exec(compiled_patterns[i], NULL, pat, pat_length, end, 0, ovector, ovector_length)) > PCRE_ERROR_NOMATCH ) {
+        while ( (pos = pcre_exec(compiled_patterns[i], NULL, input, input_length, end, 0, ovector, ovector_length)) > PCRE_ERROR_NOMATCH ) {
             begin = ovector[0];
             end   = ovector[1];
             int size = end - begin;
@@ -174,7 +174,7 @@ static void like_pattern2pcre_pattern(
         // TODO handle pos < -1 aka errors
     }
 
-    for (int i = 0; i < pat_length;) {
+    for (int i = 0; i < input_length;) {
         merge_element_t* merge_element = &merge_array[i];
 
         if (merge_element->size) {
@@ -186,13 +186,13 @@ static void like_pattern2pcre_pattern(
             continue;
         }
 
-        *(*result_cursor)++ = *(pat + i++); // Just copy the current byte
+        *(*result_cursor)++ = *(input + i++); // Just copy the current byte
     }
 
     **result_cursor = 0; // Finalize transformed_pat with null terminator
 }
 
-char *UDFpattern2re(char ** result, const char **input) {
+char *UDFget_re(char ** result, const char **input) {
     if (GDK_STRNIL(*input)) {
 
     // TODO: check for allocation errors.
@@ -216,7 +216,7 @@ char *UDFpattern2re(char ** result, const char **input) {
     *cursor++ = '^'; // match start of string.
 
     // TODO error handling
-    like_pattern2pcre_pattern(&cursor, *input, CLASSES, nregexes, merge_array, pat_length);
+    ai_transform(&cursor, *input, REG_EXPRS, NREG_EXPRS, merge_array, pat_length);
 
     *cursor++ = '$'; // Overwrite null terminator and match end of string.
 
@@ -227,7 +227,7 @@ char *UDFpattern2re(char ** result, const char **input) {
 	return MAL_SUCCEED;
 }
 
-char *UDFpattern2normalized(char ** result, const char **input) {
+char *UDFnormalize(char ** result, const char **input) {
     if (GDK_STRNIL(*input)) {
 
     // TODO: check for allocation errors.
@@ -250,7 +250,7 @@ char *UDFpattern2normalized(char ** result, const char **input) {
     char* cursor = *result;
 
     // TODO error handling
-    like_pattern2pcre_pattern(&cursor, *input, NORMALIZED, nnormalizedletters, merge_array, pat_length);
+    ai_transform(&cursor, *input, NORM_EXPRS, NNORM_EXPRS, merge_array, pat_length);
 
     GDKfree(merge_array);
 
@@ -258,7 +258,7 @@ char *UDFpattern2normalized(char ** result, const char **input) {
 }
 
 char *
-UDFBATpattern2normalized(bat *result, const bat *input) {
+UDFBATnormalize(bat *result, const bat *input) {
 	BAT *input_bat, *result_bat;
 	BATiter bi;
 	BUN p, q;
@@ -276,19 +276,19 @@ UDFBATpattern2normalized(bat *result, const bat *input) {
 		throw(MAL, "collation.pattern2normalized", MAL_MALLOC_FAIL);
 	}
 
-    int pat_length = 4;
+    int array_size = 4;
 
     // TODO: check for allocation errors.
-    merge_element_t* merge_array = (merge_element_t*) GDKmalloc(pat_length * sizeof(merge_element_t));
+    merge_element_t* merge_array = (merge_element_t*) GDKmalloc(array_size * sizeof(merge_element_t));
 
     // TODO: check for allocation errors.
-    char* result_val = GDKmalloc(pat_length + 1);
+    char* result_val = GDKmalloc(array_size + 1);
 
 	bi = bat_iterator(input_bat);
 	BATloop(input_bat, p, q) {
-		const char *source = (const char *) BUNtail(bi, p);
+		const char *input_val = (const char *) BUNtail(bi, p);
 
-		if (GDK_STRNIL(source)) {
+		if (GDK_STRNIL(input_val)) {
             if (BUNappend(result_bat, str_nil, false) != GDK_SUCCEED) {
                 // TODO error handling
             }
@@ -296,23 +296,23 @@ UDFBATpattern2normalized(bat *result, const bat *input) {
             continue;
 		}
 
-        const int source_length = strlen(source);
+        const int source_length = strlen(input_val);
 
-		if (source_length >= pat_length) {
+		if (source_length >= array_size) {
 
-            pat_length = source_length;
+            array_size = source_length;
 
-            merge_array = GDKrealloc(merge_array, pat_length * sizeof(merge_element_t));
+            merge_array = GDKrealloc(merge_array, array_size * sizeof(merge_element_t));
 
-            result_val = GDKrealloc(result_val, pat_length + 1);
+            result_val = GDKrealloc(result_val, array_size + 1);
 		}
 
-        memset(merge_array, 0, pat_length * sizeof(merge_element_t));
+        memset(merge_array, 0, array_size * sizeof(merge_element_t));
 
         char* cursor = result_val;
 
         // TODO error handling
-        like_pattern2pcre_pattern(&cursor, source, NORMALIZED, nnormalizedletters, merge_array, source_length);
+        ai_transform(&cursor, input_val, NORM_EXPRS, NNORM_EXPRS, merge_array, source_length);
 
 		if (BUNappend(result_bat, result_val, false) != GDK_SUCCEED) {
 			// TODO error handling

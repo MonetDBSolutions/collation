@@ -13,8 +13,8 @@ CREATE FUNCTION collationlike(input STRING, pattern STRING, locale STRING) RETUR
 CREATE FUNCTION locales() RETURNS TABLE (locale STRING)
     EXTERNAL NAME collation.get_locales;
 
-CREATE FUNCTION to_re(pattern STRING) RETURNS STRING
-    EXTERNAL NAME collation.to_re;
+CREATE FUNCTION get_re(pattern STRING) RETURNS STRING
+    EXTERNAL NAME collation.get_re;
 
 CREATE FUNCTION get_ai_sort_key(input STRING) RETURNS STRING
-    EXTERNAL NAME collation.to_normalized;
+    EXTERNAL NAME collation.normalize;

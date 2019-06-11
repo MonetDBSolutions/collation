@@ -17,12 +17,12 @@ command get_locales():bat[:str]
 address UDFlocales
 comment "List available locales from which a collator can be derived.";
 
-command to_re(input:str):str
-address UDFpattern2re
+command get_re(input:str):str
+address UDFget_re
 comment "Transform a utf8 sql LIKE pattern into a pcre case insensitive regular expression.";
 
-command to_normalized(input:str):str
-address UDFpattern2normalized
+command normalize(input:str):str
+address UDFnormalize
 comment "Normalizes a utf8 string by transforming letters from upper to lower cases and removing any additional accents.";
 
 module batcollation;
@@ -34,7 +34,7 @@ command get_sort_key(input:bat[:str], locale:str):bat[:blob]
 address UDFBATget_sort_key
 comment "Transform a utf8 string into a binary collation respecting sortkey.";
 
-command to_normalized(input:bat[:str]):bat[:str]
-address UDFBATpattern2normalized
+command normalize(input:bat[:str]):bat[:str]
+address UDFBATnormalize
 comment "Normalizes a utf8 string by transforming letters from upper to lower cases and removing any additional accents.";
 

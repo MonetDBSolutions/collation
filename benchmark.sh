@@ -3,8 +3,8 @@ echo LIKE
 for i in {1..10}; do mclient -f rowcount -t performance -s "select count(*) from orders where o_comment like '%request%';" 2>&1 | grep clk; done
 echo ILIKE
 for i in {1..10}; do mclient -f rowcount -t performance -s "select count(*) from orders where o_comment ilike '%request%';" 2>&1 | grep clk; done
-echo "rematch(.., to_re(...))"
-for i in {1..10}; do mclient -f rowcount -t performance -s "select count(*) from orders where rematch(o_comment, to_re('%request%'));" 2>&1 | grep clk; done
+echo "rematch(.., get_re(...))"
+for i in {1..10}; do mclient -f rowcount -t performance -s "select count(*) from orders where rematch(o_comment, get_re('%request%'));" 2>&1 | grep clk; done
 echo collationlike
 for i in {1..10}; do mclient -f rowcount -t performance -s "select count(*) from orders where collationlike(o_comment, '%request%', 'en_US');" 2>&1 | grep clk; done
 
