@@ -160,7 +160,6 @@ static void like_pattern2pcre_pattern(
         if (err) {
             printf("%s\n", err);
         }
-        // TODO study pattern?
 
         int pos = -1;
         int begin = 0;
