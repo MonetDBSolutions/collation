@@ -63,15 +63,16 @@ This function takes a string with the semantics of a `LIKE`-pattern and transfor
 select count(*) from orders where rematch(o_comment, get_re('%request%'));
 ```
 
-Notice how the 'ȹ' character (small 'q' with digraph) is expended to the regular expression that matches all variants and cases of the letter 'q' in this example of transformation behavior:
+Notice how the 'ɋ' character (small 'q' with hook tail) is expended to the regular expression that matches a number of variants and cases of the letter 'q' in this example of transformation behavior:
+
 
 ```sql
- get_re('%☺ȹ_') = '^.*☺[q\\x{024B}\\x{02A0}\\x{A757}\\x{A759}Q\\x{A756}\\x{A758}][\\x{0300}-\\x{036F}]*.$';
+ get_re('%☺ɋ_') = '^.*☺[q\\x{024B}\\x{02A0}\\x{A757}\\x{A759}Q\\x{A756}\\x{A758}][\\x{0300}-\\x{036F}]*.$';
  ```
 
 ## `FUNCTION get_ai_sort_key(input STRING) RETURNS STRING`
 
-This function transforms an arbitrary string into a accent insensitive normalized form. It has both a scalar and vectorized implementation so that it can transform both single string values and entire string columns. It can be used as a tool to create sort key indices for accent insensitive matching and ordering use cases. For instance if the user has two string columns that he wants to match in an accent insensitive way, he can create a transformed column for each original column which can then be used in a join condition. Example of transformation behavior:
+This function transforms an arbitrary string into an accent insensitive normalized form. It has both a scalar and vectorized implementation so that it can transform both single string values and entire string columns. It can be used as a tool to create sort key indices for accent insensitive matching and ordering use cases. For instance if the user has two string columns that he wants to match in an accent insensitive way, he can create a transformed column for each original column which can then be used in a join condition. Example of transformation behavior:
 
 ```sql
  get_ai_sort_key('%Ðôõç☺å_') = '%dooc☺a_';
