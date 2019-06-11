@@ -133,22 +133,14 @@ static inline void merge_array_insert(merge_element_t* merge_array, int offset, 
     element->class = class;
 }
 
-static void ai_transform(
-    char** result_cursor,
-    const char* input,
-    const character_class_t* classes, int nclasses,
-    merge_element_t* merge_array, int input_length) {
+static inline void compile_patterns(pcre** compiled_patterns, const character_class_t* classes, int nclasses) {
+
     const char* err = NULL;
     int erroffset;
-
-    pcre* compiled_patterns[nclasses];
-
-    int ovector[ovector_length];
 
     for (int i = 0; i < nclasses; i ++) {
         const character_class_t* class = &classes[i];
 
-        // TODO Do all of this stuff in a mall prelude
         int options = PCRE_UTF8 | PCRE_MULTILINE | PCRE_DOTALL;
         compiled_patterns[i] = pcre_compile(class->match, options, &err, &erroffset, NULL);
 
@@ -156,7 +148,25 @@ static void ai_transform(
             // TODO error handling
             printf("%s\n", err);
         }
+    }
+}
 
+static inline void free_compiled_patterns(pcre* const * compiled_patterns, int nclasses) {
+
+    for (int i = 0; i < nclasses; i ++) {
+        pcre_free(compiled_patterns[i]);
+    }
+}
+
+static void ai_transform(
+    char** result_cursor,
+    const char* input,
+    pcre* const * compiled_patterns, const character_class_t* classes, int nclasses,
+    merge_element_t* merge_array, int input_length) {
+
+    int ovector[ovector_length];
+
+    for (int i = 0; i < nclasses; i ++) {
         int pos = -1;
         int begin = 0;
         int end   = 0;
@@ -165,6 +175,7 @@ static void ai_transform(
             begin = ovector[0];
             end   = ovector[1];
             int size = end - begin;
+            const character_class_t* class = &classes[i];
 
             merge_array_insert(merge_array, begin, size, class);
         }
@@ -204,6 +215,9 @@ char *UDFget_re(char ** result, const char **input) {
     // TODO: check for allocation errors.
     merge_element_t* merge_array = (merge_element_t*) GDKzalloc(pat_length * sizeof(merge_element_t));
 
+    pcre* compiled_patterns[NREG_EXPRS];
+    compile_patterns(compiled_patterns, REG_EXPRS, NREG_EXPRS);
+
     // NOTE: this is an inordinately large buffer for typical usecases.
     int buffer_size = strlen(O_CLASS) * (pat_length + 2) +1;
 
@@ -214,12 +228,13 @@ char *UDFget_re(char ** result, const char **input) {
     *cursor++ = '^'; // match start of string.
 
     // TODO error handling
-    ai_transform(&cursor, *input, REG_EXPRS, NREG_EXPRS, merge_array, pat_length);
+    ai_transform(&cursor, *input, compiled_patterns, REG_EXPRS, NREG_EXPRS, merge_array, pat_length);
 
     *cursor++ = '$'; // Overwrite null terminator and match end of string.
 
     *cursor = 0; // Finalize transformed_pat with null terminator.
 
+    free_compiled_patterns(compiled_patterns, NREG_EXPRS);
     GDKfree(merge_array);
 
 	return MAL_SUCCEED;
@@ -240,6 +255,9 @@ char *UDFnormalize(char ** result, const char **input) {
     // TODO: check for allocation errors.
     merge_element_t* merge_array = (merge_element_t*) GDKzalloc(pat_length * sizeof(merge_element_t));
 
+    pcre* compiled_patterns[NNORM_EXPRS];
+    compile_patterns(compiled_patterns, NORM_EXPRS, NNORM_EXPRS);
+
     int buffer_size = pat_length + 1;
 
     // TODO: check for allocation errors.
@@ -248,8 +266,9 @@ char *UDFnormalize(char ** result, const char **input) {
     char* cursor = *result;
 
     // TODO error handling
-    ai_transform(&cursor, *input, NORM_EXPRS, NNORM_EXPRS, merge_array, pat_length);
+    ai_transform(&cursor, *input, compiled_patterns, NORM_EXPRS, NNORM_EXPRS, merge_array, pat_length);
 
+    free_compiled_patterns(compiled_patterns, NNORM_EXPRS);
     GDKfree(merge_array);
 
 	return MAL_SUCCEED;
@@ -278,6 +297,9 @@ UDFBATnormalize(bat *result, const bat *input) {
 
     // TODO: check for allocation errors.
     merge_element_t* merge_array = (merge_element_t*) GDKmalloc(array_size * sizeof(merge_element_t));
+
+    pcre* compiled_patterns[NNORM_EXPRS];
+    compile_patterns(compiled_patterns, NORM_EXPRS, NNORM_EXPRS);
 
     // TODO: check for allocation errors.
     char* result_val = GDKmalloc(array_size + 1);
@@ -310,15 +332,16 @@ UDFBATnormalize(bat *result, const bat *input) {
         char* cursor = result_val;
 
         // TODO error handling
-        ai_transform(&cursor, input_val, NORM_EXPRS, NNORM_EXPRS, merge_array, source_length);
+        ai_transform(&cursor, input_val, compiled_patterns, NORM_EXPRS, NNORM_EXPRS, merge_array, source_length);
 
 		if (BUNappend(result_bat, result_val, false) != GDK_SUCCEED) {
 			// TODO error handling
 		}
 	}
 
-	GDKfree(merge_array);
     GDKfree(result_val);
+    free_compiled_patterns(compiled_patterns, NNORM_EXPRS);
+	GDKfree(merge_array);
 	BBPunfix(input_bat->batCacheid);
 
 	*result = result_bat->batCacheid;
