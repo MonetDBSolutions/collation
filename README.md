@@ -6,7 +6,7 @@ The repository has a third pary library dependency on icu4c which is the C versi
 
 icu4c is available on all major platforms and most package managers should be able to install it from their respective package repository.
 
-#MonetDB-extend's regexp
+# MonetDB-extend's regexp
 
 The repository has a functional dependency on the MonetDB-extend library which provides amongst others regular expression support for monetdb. To build the regexp library clone the associated Mercurial repository https://dev.monetdb.org/hg/MonetDB-extend/.  Make sure you have installed MonetDB distribution. After that just call `make install` from the root of the regexp subdirectory. Finally start your database server with an empty database. This should make the regexp functionality available. See the README.rst file in the regexp source directory for more details.
 
