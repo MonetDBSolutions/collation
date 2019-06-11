@@ -13,7 +13,6 @@ extern __declspec(dllexport) char *UDFpattern2re(char ** result, const char **in
 extern __declspec(dllexport) char *UDFpattern2normalized(char ** result, const char **input);
 extern __declspec(dllexport) char *UDFBATpattern2normalized(bat *result, const bat *input);
 
-//#define A_CLASS "a"
 #define A_CLASS "[A\\x{00C0}\\x{00C1}\\x{00C2}\\x{00C3}\\x{00C4}\\x{00C5}\\x{0100}\\x{0102}\\x{0104}\\x{01CD}\\x{01DE}\\x{01E0}\\x{01FA}\\x{0200}\\x{0202}\\x{0226}\\x{023A}\\x{1E00}\\x{1EA0}\\x{1EA2}\\x{1EA4}\\x{1EA6}\\x{1EA8}\\x{1EAA}\\x{1EAC}\\x{1EAE}\\x{1EB0}\\x{1EB2}\\x{1EB4}\\x{1EB6}a\\x{00E0}\\x{00E1}\\x{00E2}\\x{00E3}\\x{00E4}\\x{00E5}\\x{0101}\\x{0103}\\x{0105}\\x{01CE}\\x{01DF}\\x{01E1}\\x{01FB}\\x{0201}\\x{0203}\\x{0227}\\x{1D8F}\\x{1E01}\\x{1E9A}\\x{1EA1}\\x{1EA3}\\x{1EA5}\\x{1EA7}\\x{1EA9}\\x{1EAB}\\x{1EAD}\\x{1EAF}\\x{1EB1}\\x{1EB3}\\x{1EB5}\\x{1EB7}\\x{2C65}\\x{AB31}][\\x{0300}-\\x{036F}]*"
 #define B_CLASS "[b\\x{0180}\\x{0183}\\x{0253}\\x{1D6C}\\x{1D80}\\x{1E03}\\x{1E05}\\x{1E07}\\x{A797}B\\x{0181}\\x{0182}\\x{0243}\\x{1E02}\\x{1E04}\\x{1E06}\\x{A796}][\\x{0300}-\\x{036F}]*"
 #define C_CLASS "[C\\x{00C7}\\x{0106}\\x{0108}\\x{010A}\\x{010C}\\x{0187}\\x{023B}\\x{1E08}\\x{A792}c\\x{00E7}\\x{0107}\\x{0109}\\x{010B}\\x{010D}\\x{0188}\\x{023C}\\x{0255}\\x{1E09}\\x{A793}\\x{A794}][\\x{0300}-\\x{036F}]*"
