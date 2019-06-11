@@ -2,6 +2,7 @@
 #include <mal_exception.h>
 
 #include <gdk.h>
+#include <gdk_atoms.h>
 
 #include <string.h>
 
@@ -194,6 +195,14 @@ static void like_pattern2pcre_pattern(
 }
 
 char *UDFpattern2re(char ** result, const char **input) {
+    if (GDK_STRNIL(*input)) {
+
+    // TODO: check for allocation errors.
+        *result = GDKmalloc(sizeof(str_nil));
+        strcpy (*result, str_nil);
+
+	    return MAL_SUCCEED;
+    }
 
     int pat_length =  strlen(*input);
 
@@ -221,6 +230,14 @@ char *UDFpattern2re(char ** result, const char **input) {
 }
 
 char *UDFpattern2normalized(char ** result, const char **input) {
+    if (GDK_STRNIL(*input)) {
+
+    // TODO: check for allocation errors.
+        *result = GDKmalloc(sizeof(str_nil));
+        strcpy (*result, str_nil);
+
+	    return MAL_SUCCEED;
+    }
 
     int pat_length =  strlen(*input);
 
