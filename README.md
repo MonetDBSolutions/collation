@@ -2,13 +2,18 @@ This repository contains prototypes for MonetDB UDF's to accomodate new collatio
 
 # ICU
 
-The repository has a third pary dependency on icu4c which is the C version of the International Components for Unicode. This library offers all kinds of tools to deal with text in a locale sensitive and very customizable manner.
+The repository has a third pary library dependency on icu4c which is the C version of the International Components for Unicode. This library offers all kinds of tools to deal with text in a locale sensitive and very customizable manner.
 
 icu4c is available on all major platforms and most package managers should be able to install it from their respective package repository.
 
+#MonetDB-extend's regexp
+
+The repository has a functional dependency on the MonetDB-extend library which provides amongst others regular expression support for monetdb. To build the regexp library clone the associated Mercurial repository https://dev.monetdb.org/hg/MonetDB-extend/.  Make sure you have installed MonetDB distribution. After that just call `make install` from the root of the regexp subdirectory. Finally start your database server with an empty database. This should make the regexp functionality available. See the README.rst file in the regexp source directory for more details.
+
+
 # Build and installation details
 
-the make file assumes that MonetDB and icu4c are installed in directories that can be found by pkg-config.
+the make file assumes that MonetDB, icu4c and regexp are installed in directories that can be found by pkg-config.
 
 I have the issue on my ubuntu machine that I have to remove the bzip2 dependency from
 <prefix>/lib/pkgconfig/monetdb-stream.pc
@@ -21,7 +26,7 @@ To build the udf library, simply execute `make` in the root of the source direct
 
 # Getting started
 
-This repository introduces three sql functions which are declared in 82_collation.sql.
+This repository introduces five sql functions which are declared in 82_collation.sql.
 
 ## `FUNCTION get_sort_key(input STRING, locale STRING) RETURNS BLOB`
 
@@ -49,3 +54,25 @@ Any locale identifier to be used in `get_sort_key` and `collationlike` must be a
 ```sql
 select * from locales();
 ```
+
+## `FUNCTION get_re(pattern STRING) RETURNS STRING`
+
+This function takes a string with the semantics of a `LIKE`-pattern and transforms it into a PCRE compatible regular expression. It can be used in collaboration with the regexp MAL extension to obtain accent insensitive (I)LIKE behavior:
+
+```sql
+select count(*) from orders where rematch(o_comment, get_re('%request%'));
+```
+
+Notice how the 'ȹ' character (small 'q' with digraph) is expended to the regular expression that matches all variants and cases of the letter 'q' in this example of transformation behavior:
+
+```sql
+ get_re('%☺ȹ_') = '^.*☺[q\\x{024B}\\x{02A0}\\x{A757}\\x{A759}Q\\x{A756}\\x{A758}][\\x{0300}-\\x{036F}]*.$';
+ ```
+
+## `FUNCTION get_ai_sort_key(input STRING) RETURNS STRING`
+
+This function transforms an arbitrary string into a accent insensitive normalized form. It has both a scalar and vectorized implementation so that it can transform both single string values and entire string columns. It can be used as a tool to create sort key indices for accent insensitive matching and ordering use cases. For instance if the user has two string columns that he wants to match in an accent insensitive way, he can create a transformed column for each original column which can then be used in a join condition. Example of transformation behavior:
+
+```sql
+ get_ai_sort_key('%Ðôõç☺å_') = '%dooc☺a_';
+ ```
