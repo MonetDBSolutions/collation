@@ -204,6 +204,7 @@ char *UDFget_re(char ** result, const char **input) {
     // TODO: check for allocation errors.
     merge_element_t* merge_array = (merge_element_t*) GDKzalloc(pat_length * sizeof(merge_element_t));
 
+    // NOTE: this is an inordinately large buffer for typical usecases.
     int buffer_size = strlen(O_CLASS) * (pat_length + 2) +1;
 
     // TODO: check for allocation errors.
