@@ -127,12 +127,10 @@ struct merge_element_t {
     const character_class_t* class;
 };
 
-static inline void merge_array_insert(merge_element_t* merge_array, int* delta, int offset, int size, const character_class_t* class) {
+static inline void merge_array_insert(merge_element_t* merge_array, int offset, int size, const character_class_t* class) {
     merge_element_t* element = &merge_array[offset];
     element->size = size;
     element->class = class;
-
-    *delta += (class->replacement_length - size);
 }
 
 static void ai_transform(
@@ -140,7 +138,6 @@ static void ai_transform(
     const char* input,
     const character_class_t* classes, int nclasses,
     merge_element_t* merge_array, int input_length) {
-    int delta = 0; // Counts the increase in bytes of the transformed pattern w.r.t. the original pattern
     const char* err = NULL;
     int erroffset;
 
@@ -169,7 +166,7 @@ static void ai_transform(
             end   = ovector[1];
             int size = end - begin;
 
-            merge_array_insert(merge_array, &delta, begin, size, class);
+            merge_array_insert(merge_array, begin, size, class);
         }
         // TODO handle pos < -1 aka errors
     }
