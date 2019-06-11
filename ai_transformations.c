@@ -276,7 +276,7 @@ UDFBATnormalize(bat *result, const bat *input) {
 		throw(MAL, "collation.pattern2normalized", MAL_MALLOC_FAIL);
 	}
 
-    int array_size = 4;
+    int array_size = 64;
 
     // TODO: check for allocation errors.
     merge_element_t* merge_array = (merge_element_t*) GDKmalloc(array_size * sizeof(merge_element_t));
@@ -300,7 +300,7 @@ UDFBATnormalize(bat *result, const bat *input) {
 
 		if (source_length >= array_size) {
 
-            array_size = source_length;
+            array_size = 2 * source_length;
 
             merge_array = GDKrealloc(merge_array, array_size * sizeof(merge_element_t));
 
