@@ -144,6 +144,8 @@ static inline void compile_patterns(pcre** compiled_patterns, const character_cl
         int options = PCRE_UTF8 | PCRE_MULTILINE | PCRE_DOTALL;
         compiled_patterns[i] = pcre_compile(class->match, options, &err, &erroffset, NULL);
 
+        // PERHAPS we should study these expressions for the sake of UDFBATnormalize.
+
         if (err) {
             // TODO error handling
             printf("%s\n", err);
