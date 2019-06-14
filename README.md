@@ -67,7 +67,7 @@ Notice how the 'ɋ' character (small 'q' with hook tail) is expended to the regu
 
 
 ```sql
- get_re('%☺ɋ_') = '^.*☺[q\\x{024B}\\x{02A0}\\x{A757}\\x{A759}Q\\x{A756}\\x{A758}][\\x{0300}-\\x{036F}]*.$';
+ get_re('%ɋ_') = '^.*[QꝖꝘqɋʠꝗꝙ][̀-ͯ]*.$';
  ```
 
 ## `FUNCTION get_ai_sort_key(input STRING) RETURNS STRING`
